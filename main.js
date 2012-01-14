@@ -5,6 +5,7 @@ var gl;
 // globals that shouldn't be globals
 var shaderProgram;
 
+var g_pressedKeys = {};
 
 function loadFragmentShader() {
 	var shader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -12,14 +13,16 @@ function loadFragmentShader() {
 "\
 precision highp float; \
 varying vec2 vTextureCoord; \
-varying vec4 vColor; \
 uniform sampler2D uSampler; \
-uniform int uUseColor; \
+uniform vec4 uColor; \
 void main(void) { \
-	if (uUseColor == 1) { \
-		gl_FragColor = vColor; \
-	} else { \
+	if (uColor.a < 1.0) { \
 		gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)); \
+		if (uColor.a > 0.0) { \
+			gl_FragColor = gl_FragColor * uColor; /* @todo better blending */ \
+		} \
+	} else { \
+		gl_FragColor = uColor; \
 	} \
 } \
 ");
@@ -40,16 +43,13 @@ function loadVertexShader() {
 "\
 attribute vec3 aVertexPosition; \
 attribute vec2 aTextureCoord; \
-attribute vec4 aVertexColor; \
 uniform mat4 uMVMatrix; \
 uniform mat4 uPMatrix; \
+uniform vec4 uColor; \
 varying vec2 vTextureCoord; \
-varying vec4 vColor; \
-uniform int uUseColor; \
 void main(void) { \
 	gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0); \
 	vTextureCoord = aTextureCoord; \
-	vColor = aVertexColor; \
 } \
 ");
 	
@@ -85,12 +85,8 @@ function initShaders() {
 	
 	shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
     gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
-	
-	shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
-	shaderProgram.useColorUniform = gl.getUniformLocation(shaderProgram, "uUseColor");
-
+	shaderProgram.colorUniform = gl.getUniformLocation(shaderProgram, "uColor");
 	shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
 	shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 	shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
@@ -131,7 +127,11 @@ function Renderable(url, width, height, offsetType) {
 	this.height = height;
 	
 	// create texture from image
-	this.texture = loadTexture(url);
+	if (url) {
+		this.texture = loadTexture(url);
+	} else {
+		this.texture = null;
+	}
 	
 	// create buffers, lack of immediate mode in WebGL forces us to do this
 	this.vbuf = gl.createBuffer();
@@ -200,14 +200,12 @@ Renderable.prototype.render = function(position) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.tbuf);
 	gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 
 							this.tbuf.itemSize, gl.FLOAT, false, 0, 0);
-
-	// enable texture mode for the shader
-	gl.uniform1i(shaderProgram.useColorUniform, 0);
-
 		
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	gl.uniform1i(shaderProgram.samplerUniform, 0);
+	
+	gl.uniform4f(shaderProgram.colorUniform, 0, 0, 0, 0);
 	
 	if (this.useSrcAlpha) {
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -217,7 +215,6 @@ Renderable.prototype.render = function(position) {
 		gl.disable(gl.BLEND);
 	//	gl.enable(gl.DEPTH_TEST);
 	}
-	
 	
 	setMatrixUniforms();
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vbuf.itemCount);
@@ -262,7 +259,7 @@ function configureImageTexture(texture) {
 //////////////////////////////////////////////////////////////////
 
 
-var mvMatrixStack = [];
+var mvMatrixStack = new Array();
 
 function mvPopMatrix() {
 	if (mvMatrixStack.length == 0) {
@@ -351,21 +348,16 @@ var testrect;
 var g_activeTool = null;
 
 function start() {
-	canvas = document.getElementById("ogl_canvas");
+	var canvas = document.getElementById("ogl_canvas");
 	
 	initGL(canvas);
 	initShaders();
 
-	canvas.onmousedown = handleMouseDown;
-	
-    document.onmouseup = handleMouseUp;
-    document.onmousemove = handleMouseMove;
-	document.onkeydown = handleKeyDown;
-    document.onkeyup = handleKeyUp;
+	bindEvents(canvas);
 	
 	framerate = new Framerate("framerate");
 	
-	MapEditor.initialize();
+	//MapEditor.initialize();
 	
 	mypic = new Renderable("./test.png", 512, 512, RenderableOffset.CENTER); //484, 531);
 	mypic.rotation = 0.78539;
@@ -373,7 +365,8 @@ function start() {
 	
 	background = new Renderable("./background.png", 640*2, 480*2, RenderableOffset.BOTTOM_LEFT);
 
-	testrect = new RenderableThing();
+	testrect = new RenderableBox(300, 300, 10, [0.5, 0, 0.5, 0.80]);
+	//new RenderableRect(100, 100, [0.5, 0, 0.5, 1.0]);
 	
 	//MapCamera.setPosition([0.0, 0.0, 0.0]);
 	
@@ -383,6 +376,38 @@ function start() {
 	//gl.enable(gl.BLEND);
 
 	heartbeat();
+}
+
+function bindEvents(canvas) {
+	
+	canvas.onmousedown = onMouseDown;
+	
+	// These were document
+    canvas.onmouseup = onMouseUp;
+    canvas.onmousemove = onMouseMove;
+	
+	// @todo window versus document?
+	window.onkeydown = onKeyDown;
+    window.onkeyup = onKeyUp;
+
+	window.onfocus = onFocus;
+	window.onblur = onBlur;
+}
+
+/**
+ * Window loses focus, kill inputs and certain events
+ */
+function onBlur() {
+    console.log("blur");
+	delete g_pressedKeys;
+}
+
+/**
+ * Window regained focus, reactivate inputs and certain events
+ */
+function onFocus() {
+    console.log("focus");
+	
 }
 
 function heartbeat() {
@@ -404,6 +429,9 @@ function drawScene() {
 	MapCamera.setupViewport();
 
 	background.render([0.0, 0.0, 0.0]);
+	
+	testrect.render([100, 0, 0]);
+	
 	mypic.render([500, 0, 0]);
 	
 	if (g_activeTool != null) {
@@ -433,24 +461,32 @@ function getCursorPositionInCanvas(event) {
 	return result;
 }
 
-function handleKeyDown(event) {
+function onKeyDown(e) {
+	e = e || window.event;
+	
+	g_pressedKeys[e.keyCode] = true;
 	
 	if (g_activeTool != null) {
-		g_activeTool.onKeyDown(event.keyCode);
+		g_activeTool.onKeyDown(e.keyCode);
 	}
 }
 
-function handleKeyUp(event) {
-	console.log("Key code: " + event.keyCode);
+function onKeyUp(e) {
+	e = e || window.event;
+	
+	console.log("Key code: " + e.keyCode);
 
+	// @todo still doesn't work to clear the keyboard. Figure out a method!!!
+	delete g_pressedKeys[e.keyCode];
+	
 	if (g_activeTool != null) {
-		g_activeTool.onKeyUp(event.keyCode);
+		g_activeTool.onKeyUp(e.keyCode);
 	}
 }
 
-function handleMouseDown(event) {
+function onMouseDown(e) {
 
-	var pos = getCursorPositionInCanvas(event);
+	var pos = getCursorPositionInCanvas(e);
 	console.log("pos raw: " + vec3.str(pos));
 	
 	// @todo right/left check. For now, assume right functionality
@@ -459,9 +495,9 @@ function handleMouseDown(event) {
 	}
 }
 
-function handleMouseUp(event) {
+function onMouseUp(e) {
 
-	var pos = getCursorPositionInCanvas(event);
+	var pos = getCursorPositionInCanvas(e);
 
 	// @todo right/left check. For now, assume right functionality
 	if (g_activeTool != null) {
@@ -469,9 +505,9 @@ function handleMouseUp(event) {
 	}
 }
 
-function handleMouseMove(event) {
+function onMouseMove(e) {
 
-	var pos = getCursorPositionInCanvas(event);
+	var pos = getCursorPositionInCanvas(e);
 
 	if (g_activeTool != null) {
 		g_activeTool.onMouseMove(pos);
@@ -483,6 +519,12 @@ function handleMouseMove(event) {
 // Sometimes just a random double click in the window will make it happen too!
 // It's pretty common, really. Need to figure out solutions!
 function handleKeyboard() {
+
+	// @todo time binding
+	
+	//for (e in g_pressedKeys) {
+	//	console.log(e);
+	//}
 
 	// Camera binds
 	if (g_pressedKeys[38]) { // up 
@@ -498,4 +540,3 @@ function handleKeyboard() {
 		MapCamera.position[0] += 10.0;
 	}
 }
-
