@@ -64,6 +64,36 @@ Renderable.prototype.endDraw = function() {
 	mvPopMatrix();
 }
 
+/**
+ * Determines if this renderable intersects a given point and takes in account
+ * rotation/scaling/etc. 
+ * @param pos vec3 world coordinate to test
+ * @return true if pos is within our rectangle, false otherwise
+ */
+Renderable.prototype.intersectsBoundingBox = function(pos) {
+	
+	var dp = vec3.create(pos);
+	vec3.subtract(dp, this.position);
+
+	if (this.rotation != 0.0) {
+
+		// rotate the test point in the opposite direction
+		var c = Math.cos(-this.rotation);
+		var s = Math.sin(-this.rotation);
+		
+		var r = vec3.create(dp);
+		r[0] = dp[0] * c - dp[1] * s;
+		r[1] = dp[0] * s + dp[1] * c;
+		vec3.set(r, dp);
+	}
+	
+	vec3.subtract(dp, this.offset);
+
+	// @TODO: Factor in scaling, when we get to that point!
+
+	return (dp[0] >= 0 && dp[0] <= this.width && dp[1] >= 0 && dp[1] <= this.height);
+}
+
 //////////////////////////////////////////////////////////////////
 
 function RenderableBox(width, height, thickness, color) {

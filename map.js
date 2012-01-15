@@ -38,13 +38,15 @@ MapProp.prototype.intersects = function(pos) {
 	// See: http://stackoverflow.com/questions/1240660/check-if-a-point-is-in-a-rotated-rectangle-c
 	
 	// lazy distance formula for now
-	
-	var i = this.renderable.position[0] - pos[0];
+	// @todo this isn't actually the center. Never calculated in offsets.
+	/*var i = this.renderable.position[0] - pos[0];
 	var j = this.renderable.position[1] - pos[1];
 
 	var d = Math.sqrt(i*i + j*j);
 
 	return d < Math.min(this.renderable.width, this.renderable.height);
+	*/
+	return this.renderable.intersectsBoundingBox(pos);
 }
 
 MapEditor = {
