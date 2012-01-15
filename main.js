@@ -5,7 +5,7 @@ var gl;
 // globals that shouldn't be globals
 var shaderProgram;
 
-var g_pressedKeys = {};
+var g_pressedKeys = new Array();
 
 function loadFragmentShader() {
 	var shader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -109,119 +109,11 @@ function initGL(canvas) {
 	}
 }	
 
-
 //////////////////////////////////////////////////////////////////
 
-
-RenderableOffset = {
-	CENTER : 1,
-	BOTTOM_LEFT : 2,
-	BOTTOM_CENTER : 3,
-}
-
-function Renderable(url, width, height, offsetType) {
-	this.rotation = 0.0;
-	this.scale = 1.0;
-	this.useSrcAlpha = false;
-	this.width = width;
-	this.height = height;
-	
-	// create texture from image
-	if (url) {
-		this.texture = loadTexture(url);
-	} else {
-		this.texture = null;
-	}
-	
-	// create buffers, lack of immediate mode in WebGL forces us to do this
-	this.vbuf = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.vbuf);
-
-	switch (offsetType) {
-		case RenderableOffset.CENTER:
-			this.offset = [-width*0.5, -height*0.5, 0.0];
-			break;
-		case RenderableOffset.BOTTOM_CENTER:
-			this.offset = [-width*0.5, 0.0, 0.0];
-			break;
-		default: // RenderableOffset.BOTTOM_LEFT
-			this.offset = [0.0, 0.0, 0.0];
-			break;
-	}
-	
-	// triangle strip form (since there's no GL_QUAD)
-	gl.bufferData(gl.ARRAY_BUFFER, 
-		new glMatrixArrayType([
-			width, 0.0, 0.0, // bottom right
-			width, height, 0.0, // top right
-			0.0,   0.0, 0.0, // bottom left
-			0.0,   height, 0.0 // top left
-		]), gl.STATIC_DRAW);
-		
-	this.vbuf.itemSize = 3;
-	this.vbuf.itemCount = 4;
-
-	// Create texture mapping
-	this.tbuf = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.tbuf);
-	
-	gl.bufferData(gl.ARRAY_BUFFER, 
-		new glMatrixArrayType([
-			1.0, 0.0,
-			1.0, 1.0,
-			0.0, 0.0,
-			0.0, 1.0
-		]), gl.STATIC_DRAW);
-		
-	this.tbuf.itemSize = 2;
-	this.tbuf.itemCount = 4;
-
-	// @todo create normal mapping
-}
-
-Renderable.prototype.render = function(position) {
-
-	mvPushMatrix();
-
-	// Position itself correctly
-	mat4.translate(gl.mvMatrix, position);
-	
-	if (this.rotation != 0.0) {
-		mat4.rotateZ(gl.mvMatrix, this.rotation);
-	}
-	
-	mat4.translate(gl.mvMatrix, this.offset);
-	
-	// Set up buffers to use
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.vbuf);
-	gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 
-							this.vbuf.itemSize, gl.FLOAT, false, 0, 0);
-	
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.tbuf);
-	gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 
-							this.tbuf.itemSize, gl.FLOAT, false, 0, 0);
-		
-	gl.activeTexture(gl.TEXTURE0);
-	gl.bindTexture(gl.TEXTURE_2D, this.texture);
-	gl.uniform1i(shaderProgram.samplerUniform, 0);
-	
-	gl.uniform4f(shaderProgram.colorUniform, 0, 0, 0, 0);
-	
-	if (this.useSrcAlpha) {
-		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-		gl.enable(gl.BLEND);
-	//	gl.disable(gl.DEPTH_TEST);
-	} else {
-		gl.disable(gl.BLEND);
-	//	gl.enable(gl.DEPTH_TEST);
-	}
-	
-	setMatrixUniforms();
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vbuf.itemCount);
-	
-	mvPopMatrix();
-}
-
+/**
+ * Create a GL texture object and load it from the desired url 
+ */
 function loadTexture(url) {
 	var texture = gl.createTexture();
 	texture.image = new Image();
@@ -232,6 +124,9 @@ function loadTexture(url) {
 	return texture;
 }
 
+/**
+ * Called in the onload function for a texture image once it's downloaded
+ */
 function configureImageTexture(texture) {
 	
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -254,9 +149,6 @@ function configureImageTexture(texture) {
 
 	gl.bindTexture(gl.TEXTURE_2D, null);
 }
-
-
-//////////////////////////////////////////////////////////////////
 
 
 var mvMatrixStack = new Array();
@@ -283,7 +175,8 @@ function setMatrixUniforms() {
 
 MapCamera = {
 
-	position : vec3.create(),
+	position : vec3.create(), /**< Our position would be the same as the canvas
+									@todo type convert to rect? */
 
 	setupViewport : function() {
 	
@@ -330,7 +223,19 @@ MapCamera = {
 		result[0] += x;
 		result[1] += y;
 		
-		console.log("canvas " + x + "," + y + " > world " + vec3.str(result));
+		console.log("canvasToWorld: canvas (" + x + "," + y + ") > world " + vec3.str(result));
+		
+		return result;
+	},
+	
+	canvasVec3ToWorld : function(pos) {
+	
+		var result = vec3.create(this.position);
+		
+		pos[1] = (gl.viewportHeight - pos[1]);
+		vec3.add(result, pos);
+		
+		console.log("canvasVec3ToWorld: canvas " + vec3.str(pos) + " > world " + vec3.str(result));
 		
 		return result;
 	}
@@ -357,15 +262,20 @@ function start() {
 	
 	framerate = new Framerate("framerate");
 	
-	//MapEditor.initialize();
+	MapEditor.initialize();
 	
-	mypic = new Renderable("./test.png", 512, 512, RenderableOffset.CENTER); //484, 531);
+	mypic = new RenderableImage("./test.png", 512, 512); //484, 531);
 	mypic.rotation = 0.78539;
 	mypic.useSrcAlpha = true;
+	mypic.position = [500, 0, 0];
+	mypic.setOffset(RenderableOffset.CENTER);
 	
-	background = new Renderable("./background.png", 640*2, 480*2, RenderableOffset.BOTTOM_LEFT);
-
-	testrect = new RenderableBox(300, 300, 10, [0.5, 0, 0.5, 0.80]);
+	background = new RenderableImage("./background.png", 640*2, 480*2);
+	
+	testrect = new RenderableBox(300, 300, 10, [0.5, 0, 0.5]);
+	testrect.position = [100, 0, 0];
+	//testrect.setOffset(RenderableOffset.CENTER);
+	
 	//new RenderableRect(100, 100, [0.5, 0, 0.5, 1.0]);
 	
 	//MapCamera.setPosition([0.0, 0.0, 0.0]);
@@ -376,38 +286,6 @@ function start() {
 	//gl.enable(gl.BLEND);
 
 	heartbeat();
-}
-
-function bindEvents(canvas) {
-	
-	canvas.onmousedown = onMouseDown;
-	
-	// These were document
-    canvas.onmouseup = onMouseUp;
-    canvas.onmousemove = onMouseMove;
-	
-	// @todo window versus document?
-	window.onkeydown = onKeyDown;
-    window.onkeyup = onKeyUp;
-
-	window.onfocus = onFocus;
-	window.onblur = onBlur;
-}
-
-/**
- * Window loses focus, kill inputs and certain events
- */
-function onBlur() {
-    console.log("blur");
-	delete g_pressedKeys;
-}
-
-/**
- * Window regained focus, reactivate inputs and certain events
- */
-function onFocus() {
-    console.log("focus");
-	
 }
 
 function heartbeat() {
@@ -428,11 +306,11 @@ function drawScene() {
 	
 	MapCamera.setupViewport();
 
-	background.render([0.0, 0.0, 0.0]);
+	background.render();
+	testrect.render();
+	mypic.render();
 	
-	testrect.render([100, 0, 0]);
-	
-	mypic.render([500, 0, 0]);
+	MapEditor.render();
 	
 	if (g_activeTool != null) {
 		g_activeTool.render();
@@ -461,6 +339,41 @@ function getCursorPositionInCanvas(event) {
 	return result;
 }
 
+
+//////////////////////////////////////////////////////////////////
+
+function bindEvents(canvas) {
+	
+	canvas.onmousedown = onMouseDown;
+	
+	// These were document
+    canvas.onmouseup = onMouseUp;
+    canvas.onmousemove = onMouseMove;
+	
+	// @todo window versus document?
+	window.onkeydown = onKeyDown;
+    window.onkeyup = onKeyUp;
+
+	window.onfocus = onFocus;
+	window.onblur = onBlur;
+}
+
+/**
+ * Window loses focus, kill inputs and certain events
+ */
+function onBlur() {
+    console.log("blur");
+	g_pressedKeys.length = 0;
+}
+
+/**
+ * Window regained focus, reactivate inputs and certain events
+ */
+function onFocus() {
+    console.log("focus");
+	
+}
+
 function onKeyDown(e) {
 	e = e || window.event;
 	
@@ -487,8 +400,24 @@ function onKeyUp(e) {
 function onMouseDown(e) {
 
 	var pos = getCursorPositionInCanvas(e);
+	var prop;
+	
 	console.log("pos raw: " + vec3.str(pos));
 	
+	var wpos = MapCamera.canvasVec3ToWorld(pos);
+	
+	if (g_pressedKeys[16]) { // shift + click
+		prop = new MapProp("./test.png", 128, 128);
+		MapEditor.addProp(prop);
+		prop.setPosition(wpos);
+		prop.renderable.useSrcAlpha = true;
+	}
+	else 
+	{
+		prop = MapEditor.pickProp(wpos, true);
+		MapEditor.setGrabbedEntity(prop);
+	}
+
 	// @todo right/left check. For now, assume right functionality
 	if (g_activeTool != null) {
 		g_activeTool.onRightMouseDown(pos);
@@ -514,29 +443,23 @@ function onMouseMove(e) {
 	}
 }
 
-
 // @todo BUG: If press, drag, click out of focus, it'll KEEP MOVING the camera and can't get it to stop!
 // Sometimes just a random double click in the window will make it happen too!
 // It's pretty common, really. Need to figure out solutions!
 function handleKeyboard() {
 
-	// @todo time binding
-	
-	//for (e in g_pressedKeys) {
-	//	console.log(e);
-	//}
-
 	// Camera binds
-	if (g_pressedKeys[38]) { // up 
+	if (g_pressedKeys[87]) { // up 
 		MapCamera.position[1] += 10.0;
 	}
-	if (g_pressedKeys[40]) { // down
+	if (g_pressedKeys[83]) { // down
 		MapCamera.position[1] -= 10.0;
 	}
-	if (g_pressedKeys[37]) { // left
+	if (g_pressedKeys[65]) { // left
 		MapCamera.position[0] -= 10.0;
 	}
-	if (g_pressedKeys[39]) { // right
+	if (g_pressedKeys[68]) { // right
 		MapCamera.position[0] += 10.0;
 	}
 }
+

@@ -7,20 +7,29 @@
 
 /**
  * Create a new visible prop on the map
+ * @todo this could be an override of RenderableImage, but I need to figure
+ * out how to provide constructor arguments to the parent object
  */
-function MapProp(position, url, width, height) {
+function MapProp(url, width, height) {
 
-	this.position = position;
-	this.renderable = new Renderable(url, width, height, RenderableOffset.CENTER);
-	MapEditor.addProp(this);
+	this.renderable = new RenderableImage(url, width, height);
+	this.renderable.setOffset(RenderableOffset.CENTER);
 }
 
 MapProp.prototype.render = function() {
-	this.renderable.render(this.position);
+	this.renderable.render();
+}
+
+MapProp.prototype.setPosition = function(position) {
+	this.renderable.position = position;
+}
+
+MapProp.prototype.getPosition = function() {
+	return this.renderable.position;
 }
 
 /**
- * @param vec3 position in world coordinate space
+ * @param pos vec3 position in world coordinate space
  */
 MapProp.prototype.intersects = function(pos) {
 	
@@ -30,14 +39,12 @@ MapProp.prototype.intersects = function(pos) {
 	
 	// lazy distance formula for now
 	
-	/*var i = Math.abs(pos[0] - this.position[0]);
-	var j = Math.abs(pos[1] - this.position[1]);
-	
+	var i = this.renderable.position[0] - pos[0];
+	var j = this.renderable.position[1] - pos[1];
+
 	var d = Math.sqrt(i*i + j*j);
-	
-	console.log(d);
-	*/
-	return true;
+
+	return d < Math.min(this.renderable.width, this.renderable.height);
 }
 
 MapEditor = {
@@ -47,7 +54,7 @@ MapEditor = {
 	 */
 	initialize : function() {
 	
-		this.props = [];
+		this.props = new Array();
 		// this.lights = [];
 		// this.triggers = [];
 		
@@ -59,18 +66,20 @@ MapEditor = {
 	},
 	
 	/** 
-	 * Locates and returns the topmost prop at canvas coordinates (x,y)
+	 * Locates and returns the topmost prop at the specified position
+	 * @param pos vec3 location in world coordinates
+	 * @param ignoreCurrent bool if true, will skip over this.grabbed
 	 */
-	pickProp : function(x, y) {
+	pickProp : function(pos, ignoreCurrent) {
 		var iter;
 	
 		// Create coordinates relative to the camera
-		var pos = MapCamera.canvasToWorld(x, y);
 		var len = this.props.length;
 		
 		// most forward props are at the end of the array, reverse iterate
 		for (iter = len - 1; iter >= 0; iter--) {
-			if (this.props[iter].intersects(pos)) {
+			if (this.props[iter].intersects(pos) 
+				&& (!ignoreCurrent || this.props[iter] != this.grabbed)) {
 				return this.props[iter];
 			}
 		}
@@ -85,24 +94,44 @@ MapEditor = {
 	 */
 	moveGrabbedEntity : function(x, y) {
 
-		this.grabbed.position = MapCamera.canvasToWorld(x, y);
+		if (this.grabbed != null) {
+			this.grabbed.setPosition(MapCamera.canvasToWorld(x, y));
+		}
 	},
 	
 	setGrabbedEntity : function(ent) {
 		this.grabbed = ent;
+		
+		if (this.grabrect != null) {
+			// @todo delete or is it auto?
+		}
+		
+		// Create a rectangle around the entity to indicate that it's grabbed
+		if (ent != null) {
+			console.log("Grabbed prop at " + vec3.str(ent.getPosition()));
+		
+			this.grabrect = new RenderableBox(ent.renderable.width, ent.renderable.height, 5, [0, 1, 0]);
+			
+			this.grabrect.rotation = ent.renderable.rotation;
+			// @todo Not working yet: this.grabrect.scale = ent.renderable.scale;
+			this.grabrect.offset = ent.renderable.offset;
+			this.grabrect.position = ent.getPosition();
+		}
 	},
 
 	/**
 	 * Goes through all props and renders them to the canvas
 	 */
 	render : function() {
-		var iter;
-		var len = this.props.length;
-		
-		for (iter = 0; iter < len; iter++) {
+	
+		for (var iter in this.props) {
 			if (MapEditor.isPropVisible(this.props[iter])) {
 				this.props[iter].render();
 			}
+		}
+		
+		if (this.grabrect != null) {
+			this.grabrect.render();
 		}
 	},
 	
