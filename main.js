@@ -219,23 +219,18 @@ MapCamera = {
 		//point.xy + camera.xy - canvas.xy
 		// assuming xy are relative to the canvas at this point and not the document
 		
-		y = (gl.viewportHeight - y);
 		result[0] += x;
-		result[1] += y;
-		
-		console.log("canvasToWorld: canvas (" + x + "," + y + ") > world " + vec3.str(result));
-		
+		result[1] += (gl.viewportHeight - y);
+
 		return result;
 	},
 	
 	canvasVec3ToWorld : function(pos) {
-	
+		
 		var result = vec3.create(this.position);
 		
-		pos[1] = (gl.viewportHeight - pos[1]);
 		vec3.add(result, pos);
-		
-		console.log("canvasVec3ToWorld: canvas " + vec3.str(pos) + " > world " + vec3.str(result));
+		result[1] = gl.viewportHeight - pos[1];
 		
 		return result;
 	}
@@ -275,10 +270,9 @@ function start() {
 	testrect = new RenderableBox(300, 300, 10, [0.5, 0, 0.5]);
 	testrect.position = [100, 0, 0];
 	//testrect.setOffset(RenderableOffset.CENTER);
-	
-	//new RenderableRect(100, 100, [0.5, 0, 0.5, 1.0]);
-	
-	//MapCamera.setPosition([0.0, 0.0, 0.0]);
+
+
+	g_activeTool = new PropEditTool();
 	
 	gl.clearColor(1.0, 0.5, 0.5, 1.0);
 	//gl.enable(gl.DEPTH_TEST);
@@ -293,9 +287,13 @@ function heartbeat() {
 	// hook this function to be called next redraw 
 	requestAnimFrame(heartbeat); 
 	
+	// stuff that should go into steady timers...
 	handleKeyboard();
-	drawScene();
+	if (g_activeTool != null) {
+		g_activeTool.onUpdate();
+	}
 	
+	drawScene();
 	framerate.snapshot();
 }
 
@@ -322,16 +320,15 @@ function drawScene() {
  * @return vec3 result, from (0,0) to (gl.viewportWidth,gl.viewportHeight)
  * @todo may return negatives, and points outside the canvas. Need to ensure cursor is IN the canvas!
  */
-function getCursorPositionInCanvas(event) {
+function getCursorPositionInCanvas(e) {
 	var result = vec3.create();
 	
-	if (event.pageX || event.pageY) { 
-		result[0] = event.pageX;
-		result[1] = event.pageY;
-	}
-	else { 
-		result[0] = event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft; 
-		result[1] = event.clientY + document.body.scrollTop + document.documentElement.scrollTop; 
+	if (e.pageX || e.pageY) { 
+		result[0] = e.pageX;
+		result[1] = e.pageY;
+	} else { 
+		result[0] = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft; 
+		result[1] = e.clientY + document.body.scrollTop + document.documentElement.scrollTop; 
 	} 
 	result[0] -= gl.canvas.offsetLeft;
 	result[1] -= gl.canvas.offsetTop;
@@ -347,8 +344,8 @@ function bindEvents(canvas) {
 	canvas.onmousedown = onMouseDown;
 	
 	// These were document
-    canvas.onmouseup = onMouseUp;
-    canvas.onmousemove = onMouseMove;
+    document.onmouseup = onMouseUp;
+    document.onmousemove = onMouseMove;
 	
 	// @todo window versus document?
 	window.onkeydown = onKeyDown;
@@ -385,7 +382,7 @@ function onKeyDown(e) {
 }
 
 function onKeyUp(e) {
-	e = e || window.event;
+	e = e || window.event; // @todo why?
 	
 	console.log("Key code: " + e.keyCode);
 
@@ -403,24 +400,10 @@ function onMouseDown(e) {
 	var prop;
 	
 	console.log("pos raw: " + vec3.str(pos));
-	
-	var wpos = MapCamera.canvasVec3ToWorld(pos);
-	
-	if (g_pressedKeys[16]) { // shift + click
-		prop = new MapProp("./test.png", 128, 128);
-		MapEditor.addProp(prop);
-		prop.setPosition(wpos);
-		prop.renderable.useSrcAlpha = true;
-	}
-	else 
-	{
-		prop = MapEditor.pickProp(wpos, true);
-		MapEditor.setGrabbedEntity(prop);
-	}
 
 	// @todo right/left check. For now, assume right functionality
 	if (g_activeTool != null) {
-		g_activeTool.onRightMouseDown(pos);
+		g_activeTool.onMouseDown(pos);
 	}
 }
 
@@ -430,18 +413,22 @@ function onMouseUp(e) {
 
 	// @todo right/left check. For now, assume right functionality
 	if (g_activeTool != null) {
-		g_activeTool.onRightMouseUp(pos);
+		g_activeTool.onMouseUp(pos);
 	}
 }
 
+var g_mousePosition = vec3.create();
+
+// @todo move this to the proper location!
+vec3.equal = function(a, b) {
+	return (a[0] == b[0] && a[1] == b[1] && a[2] == b[2]);
+};
+
+/** Fired every time the mouse moves, keep lightweight */
 function onMouseMove(e) {
-
-	var pos = getCursorPositionInCanvas(e);
-
-	if (g_activeTool != null) {
-		g_activeTool.onMouseMove(pos);
-	}
+	g_mousePosition = getCursorPositionInCanvas(e);
 }
+
 
 // @todo BUG: If press, drag, click out of focus, it'll KEEP MOVING the camera and can't get it to stop!
 // Sometimes just a random double click in the window will make it happen too!

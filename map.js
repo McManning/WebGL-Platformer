@@ -104,6 +104,8 @@ MapEditor = {
 		
 		if (this.grabrect != null) {
 			// @todo delete or is it auto?
+			
+			this.grabrect = null;
 		}
 		
 		// Create a rectangle around the entity to indicate that it's grabbed
