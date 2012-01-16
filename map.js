@@ -105,9 +105,7 @@ MapEditor = {
 		this.grabbed = ent;
 		
 		if (this.grabrect != null) {
-			// @todo delete or is it auto?
-			
-			this.grabrect = null;
+			delete this.grabrect;
 		}
 		
 		// Create a rectangle around the entity to indicate that it's grabbed
@@ -122,6 +120,34 @@ MapEditor = {
 			this.grabrect.position = ent.getPosition();
 			this.grabrect.setScale(ent.renderable.scale);
 		}
+	},
+	
+	/** 
+	 * Ungrab the currently grabbed entity and delete it from the map entirely
+	 */
+	deleteGrabbedEntity : function() {
+		
+		var ent;
+		
+		if (this.grabbed) {
+			ent = this.grabbed;
+			MapEditor.setGrabbedEntity(null);
+			
+			for (var iter in this.props) {
+				if (this.props[iter] == ent) {
+					this.props.splice(iter, 1);
+					break;
+				}
+			}
+		}
+	},
+	
+	/**
+	 * Resets properties of the grabbed entity to defaults
+	 */
+	resetGrabbedEntity : function() {
+		MapEditor.setGrabbedScale(1.0);
+		MapEditor.setGrabbedRotation(0.0);
 	},
 	
 	setGrabbedRotation : function(theta) {

@@ -21,14 +21,24 @@ PropEditTool.prototype.render = function() {
 	
 PropEditTool.prototype.onKeyDown = function(keycode) {
 	
-	if (keycode == 81) { // Q
-		var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
-	
-		prop = new MapProp("./test.png", 128, 128);
-		MapEditor.addProp(prop);
-		prop.setPosition(pos);
-		prop.renderable.useSrcAlpha = true;
-		//prop.renderable.rotation = 0.45;
+	switch (keycode) {
+		case 81: // Q
+			var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
+		
+			prop = new MapProp("./test.png", 128, 128);
+			MapEditor.addProp(prop);
+			prop.setPosition(pos);
+			prop.renderable.useSrcAlpha = true;
+			//prop.renderable.rotation = 0.45;
+			break;
+			
+		case 46: // del
+			MapEditor.deleteGrabbedEntity();
+			break;
+			
+		case 82: // R
+			MapEditor.resetGrabbedEntity();
+			break;
 	}
 }
 
