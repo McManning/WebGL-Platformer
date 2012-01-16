@@ -1,7 +1,17 @@
 
+var SCALE_FACTOR = 0.001;
+
+PropEditAction = {
+	NONE : 0, 
+	TRANSLATE : 1,
+	ROTATE : 2,
+	SCALE : 3
+}
+
 function PropEditTool() {
 	this.inclick = false;
 	this.mousedown = false;
+	this.action = PropEditAction.NONE;
 }
 
 	
@@ -44,77 +54,113 @@ PropEditTool.prototype.onMouseDown = function(pos) {
 	
 		// if we clicked inside the selected prop, move it around
 		if (MapEditor.grabbed.intersects(pos)) {
-			this.movegrabbed = true;
-			this.rotategrabbed = false;
+
+			this.action = PropEditAction.TRANSLATE;
+			this.grabOffset = vec3.create(MapEditor.grabbed.getPosition());
+			vec3.subtract(this.grabOffset, pos);
 			
-			this.graboffset = vec3.create(MapEditor.grabbed.getPosition());
-			vec3.subtract(this.graboffset, pos);
-		} else {
-			this.movegrabbed = false;
-			this.rotategrabbed = true;
-			this.oldRotation = MapEditor.grabbed.renderable.rotation;
-			
-			// Save the position of the cursor relative to the objects origin
-			this.rotationStart = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
-			vec3.subtract(this.rotationStart, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
-			vec3.normalize(this.rotationStart);
-		}
+		} else { // clicked outside, check for either scale or rotate
 		
+			if (g_pressedKeys[17]) { // ctrl + click
+			
+				this.action = PropEditAction.SCALE;
+			
+				// get initial distance from origin
+				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+				vec3.subtract(pos, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
+			
+				this.initialDistance = vec3.length(pos);
+				
+			} else {
+			
+				this.action = PropEditAction.ROTATE;
+			
+				this.oldRotation = MapEditor.grabbed.renderable.rotation;
+				
+				// Save the position of the cursor relative to the objects origin
+				this.rotationStart = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+				vec3.subtract(this.rotationStart, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
+				vec3.normalize(this.rotationStart);
+			}
+		}
 	}
 }
 
 /** @param pos canvas position of the cursor */
 PropEditTool.prototype.onMouseUp = function(pos) {
 	
-	this.mousedown = false;
-	this.movegrabbed = false;
-	this.rotategrabbed = false;
-	
-	//MapEditor.grabbed.renderable.rotation = this.oldRotation;
+	this.action = PropEditAction.NONE;
 }
 
 PropEditTool.prototype.onUpdate = function() {
 
-	if (this.movegrabbed && MapEditor.grabbed) { // drag the grabbed prop around
+	var pos;
 
-		var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
-		
-		vec3.add(pos, this.graboffset);
-		MapEditor.grabbed.setPosition(pos);
-		MapEditor.grabrect.position = pos;
-		
-	} else if (this.rotategrabbed && MapEditor.grabbed) {
-		
-		// Get the new position of the cursor relative to the objects origin
-		var rotEnd = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
-		vec3.subtract(rotEnd, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
-		vec3.normalize(rotEnd);
-		
-		/*
-			Calculate the angle between the vectors made by both points
-			theta = acos(a dot b)
-		*/
-		var dot = vec3.dot(this.rotationStart, rotEnd);
-		var theta = Math.acos(dot);
+	if (MapEditor.grabbed) {
 
-		// apply adjustments for OpenGL quirks
+		switch (this.action) {
+			case PropEditAction.TRANSLATE:
+			
+				pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
+		
+				vec3.add(pos, this.grabOffset);
+				MapEditor.grabbed.setPosition(pos);
+				MapEditor.grabrect.position = pos;
+				
+				break;
+			
+			case PropEditAction.ROTATE:
 
-		if (isNaN(theta)) {
-			console.log("NAN");
-		} else {
-			console.log("Dot: " + dot + "Delta Theta: " + theta + " start " + vec3.str(this.rotationStart)
-						+ " end: " + vec3.str(rotEnd));
+				// Get the new position of the cursor relative to the objects origin
+				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+				vec3.subtract(pos, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
+				vec3.normalize(pos);
 
-			if (rotEnd[0] < 0)
-				theta *= -1;
-						
-			if (rotEnd[1] < this.rotationStart[1])
-				MapEditor.grabbed.renderable.rotation = this.oldRotation - theta;
-			else
-				MapEditor.grabbed.renderable.rotation = this.oldRotation + theta;
+				//	Calculate the angle between the vectors made by both points
+				var dot = vec3.dot(this.rotationStart, pos);
+				var theta = Math.acos(dot);
+
+				// @todo: clean this up, please
+
+				if (isNaN(theta)) {
+					throw "Fix this fucking NaN error";
+				} else {
+					console.log("Dot: " + dot + "Delta Theta: " + theta + " start " + vec3.str(this.rotationStart)
+								+ " end: " + vec3.str(pos));
+
+					// apply adjustments for OpenGL quirks
+					if (pos[0] < 0)
+						theta *= -1;
+								
+					if (pos[1] < this.rotationStart[1])
+						MapEditor.grabbed.renderable.rotation = this.oldRotation - theta;
+					else
+						MapEditor.grabbed.renderable.rotation = this.oldRotation + theta;
+				}
+					
+				break;
+				
+			case PropEditAction.SCALE:
+			
+				/* 	@todo: Proper (working) implementation. Since I haven't written in 
+					scale code anyway for the renderables, I'm in no hurry. 
+				*/
+			
+				// get initial distance from origin
+				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+				vec3.subtract(pos, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
+			
+				var d = vec3.length(pos) - this.initialDistance;
+
+				MapEditor.grabbed.renderable.scale += d * SCALE_FACTOR;
+				console.log("New Scale: " + MapEditor.grabbed.renderable.scale);
+			
+				break;
 		}
+	
 	}
 }
+
 
 
 
