@@ -35,7 +35,7 @@ PropEditTool.prototype.onMouseDown = function(pos) {
 	
 		pos = MapCamera.canvasVec3ToWorld(pos);
 		
-		prop = MapEditor.pickProp(pos, true);
+		var prop = MapEditor.pickProp(pos, true);
 		MapEditor.setGrabbedEntity(prop);
 
 	} else if (MapEditor.grabbed != null) {
@@ -47,16 +47,17 @@ PropEditTool.prototype.onMouseDown = function(pos) {
 			this.movegrabbed = true;
 			this.rotategrabbed = false;
 			
-			this.graboffset = vec3.create(prop.getPosition());
+			this.graboffset = vec3.create(MapEditor.grabbed.getPosition());
 			vec3.subtract(this.graboffset, pos);
 		} else {
 			this.movegrabbed = false;
-			
-			// rotate
 			this.rotategrabbed = true;
+			this.oldRotation = MapEditor.grabbed.renderable.rotation;
 			
-			this.graboffset = vec3.create(prop.getPosition());
-			vec3.subtract(this.graboffset, pos);
+			// Save the position of the cursor relative to the objects origin
+			this.rotationStart = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+			vec3.subtract(this.rotationStart, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
+			vec3.normalize(this.rotationStart);
 		}
 		
 	}
@@ -68,6 +69,8 @@ PropEditTool.prototype.onMouseUp = function(pos) {
 	this.mousedown = false;
 	this.movegrabbed = false;
 	this.rotategrabbed = false;
+	
+	//MapEditor.grabbed.renderable.rotation = this.oldRotation;
 }
 
 PropEditTool.prototype.onUpdate = function() {
@@ -82,7 +85,34 @@ PropEditTool.prototype.onUpdate = function() {
 		
 	} else if (this.rotategrabbed && MapEditor.grabbed) {
 		
+		// Get the new position of the cursor relative to the objects origin
+		var rotEnd = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+		vec3.subtract(rotEnd, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
+		vec3.normalize(rotEnd);
 		
+		/*
+			Calculate the angle between the vectors made by both points
+			theta = acos(a dot b)
+		*/
+		var dot = vec3.dot(this.rotationStart, rotEnd);
+		var theta = Math.acos(dot);
+
+		// apply adjustments for OpenGL quirks
+
+		if (isNaN(theta)) {
+			console.log("NAN");
+		} else {
+			console.log("Dot: " + dot + "Delta Theta: " + theta + " start " + vec3.str(this.rotationStart)
+						+ " end: " + vec3.str(rotEnd));
+
+			if (rotEnd[0] < 0)
+				theta *= -1;
+						
+			if (rotEnd[1] < this.rotationStart[1])
+				MapEditor.grabbed.renderable.rotation = this.oldRotation - theta;
+			else
+				MapEditor.grabbed.renderable.rotation = this.oldRotation + theta;
+		}
 	}
 }
 
