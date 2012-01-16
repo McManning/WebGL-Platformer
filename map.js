@@ -116,13 +116,24 @@ MapEditor = {
 		
 			this.grabrect = new RenderableBox(ent.renderable.width, ent.renderable.height, 5, [0, 1, 0]);
 			
+			// match the parent entities position with our rectangle
 			this.grabrect.rotation = ent.renderable.rotation;
-			// @todo Not working yet: this.grabrect.scale = ent.renderable.scale;
 			this.grabrect.offset = ent.renderable.offset;
 			this.grabrect.position = ent.getPosition();
+			this.grabrect.setScale(ent.renderable.scale);
 		}
 	},
-
+	
+	setGrabbedRotation : function(theta) {
+		this.grabbed.renderable.rotation = theta;
+		this.grabrect.rotation = theta;
+	},
+	
+	setGrabbedScale : function(val) { 
+		this.grabbed.renderable.setScale(val);
+		this.grabrect.setScale(val);
+	},
+	
 	/**
 	 * Goes through all props and renders them to the canvas
 	 */

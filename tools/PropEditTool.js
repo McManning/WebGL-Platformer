@@ -133,9 +133,9 @@ PropEditTool.prototype.onUpdate = function() {
 						theta *= -1;
 								
 					if (pos[1] < this.rotationStart[1])
-						MapEditor.grabbed.renderable.rotation = this.oldRotation - theta;
-					else
-						MapEditor.grabbed.renderable.rotation = this.oldRotation + theta;
+						theta *= -1;
+						
+					MapEditor.setGrabbedRotation(this.oldRotation + theta);
 				}
 					
 				break;
@@ -151,8 +151,8 @@ PropEditTool.prototype.onUpdate = function() {
 				vec3.subtract(pos, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
 			
 				var d = vec3.length(pos) - this.initialDistance;
-
-				MapEditor.grabbed.renderable.scale += d * SCALE_FACTOR;
+				
+				MapEditor.setGrabbedScale(1.0 + d * SCALE_FACTOR);
 				console.log("New Scale: " + MapEditor.grabbed.renderable.scale);
 			
 				break;
