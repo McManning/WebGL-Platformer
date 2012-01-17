@@ -49,6 +49,28 @@ MapProp.prototype.intersects = function(pos) {
 	return this.renderable.intersectsBoundingBox(pos);
 }
 
+function MapCollision(width, height) {
+	
+	this.renderable = new RenderableBox(width, height, 5, [0, 0, 0]);
+	this.renderable.setOffset(RenderableOffset.CENTER);
+}
+
+MapCollision.prototype.render = function() {
+	this.renderable.render();
+}
+
+MapCollision.prototype.setPosition = function(position) {
+	this.renderable.position = position;
+}
+
+MapCollision.prototype.getPosition = function() {
+	return this.renderable.position;
+}
+
+MapCollision.prototype.intersects = function(pos) {
+	return this.renderable.intersectsBoundingBox(pos);
+}
+
 MapEditor = {
 	
 	/**

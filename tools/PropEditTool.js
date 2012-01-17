@@ -39,6 +39,15 @@ PropEditTool.prototype.onKeyDown = function(keycode) {
 		case 82: // R
 			MapEditor.resetGrabbedEntity();
 			break;
+			
+		case 67: // C
+		
+			var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
+		
+			prop = new MapCollision(128, 128);
+			MapEditor.addProp(prop); // @todo different array for collisions!
+			prop.setPosition(pos);
+			break;
 	}
 }
 
@@ -135,8 +144,8 @@ PropEditTool.prototype.onUpdate = function() {
 				if (isNaN(theta)) {
 					throw "Fix this fucking NaN error";
 				} else {
-					console.log("Dot: " + dot + "Delta Theta: " + theta + " start " + vec3.str(this.rotationStart)
-								+ " end: " + vec3.str(pos));
+					//console.log("Dot: " + dot + "Delta Theta: " + theta + " start " + vec3.str(this.rotationStart)
+					//			+ " end: " + vec3.str(pos));
 
 					// apply adjustments for OpenGL quirks
 					if (pos[0] < 0)
@@ -156,15 +165,50 @@ PropEditTool.prototype.onUpdate = function() {
 					scale code anyway for the renderables, I'm in no hurry. 
 				*/
 			
-				// get initial distance from origin
-				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
-				vec3.subtract(pos, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
-			
-				var d = vec3.length(pos) - this.initialDistance;
 				
-				MapEditor.setGrabbedScale(1.0 + d * SCALE_FACTOR);
-				console.log("New Scale: " + MapEditor.grabbed.renderable.scale);
-			
+				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+				
+				if (MapEditor.grabbed instanceof MapProp) {
+					
+					// convert to distance from origin of object
+					vec3.subtract(pos, MapEditor.grabbed.getPosition());
+				
+					var d = vec3.length(pos) - this.initialDistance;
+					
+					MapEditor.setGrabbedScale(1.0 + d * SCALE_FACTOR);
+					console.log("New Scale: " + MapEditor.grabbed.renderable.scale);
+					
+				} else {
+					console.log(vec3.str(pos));
+					
+					// calculate new bounds, width/height is Math.abs(pos)
+					// readjust origin 
+					var p = vec3.create(MapEditor.grabbed.getPosition());
+				/*	if (pos[1] < 0)
+						p[1] += pos[1];
+					
+					if (pos[0] < 0)
+						p[0] += pos[0];
+					*/
+					
+					/*
+						point 2 is pos. Point p. Calculate new rect */
+					var np = vec3.create();
+					np[0] = Math.min(pos[0], p[0]);
+					np[1] = Math.min(pos[1], p[1]);
+					
+					var w = Math.abs(pos[0] - p[0]);
+					var h = Math.abs(pos[1] - p[1]);
+					
+					if (w < 10) w = 10;
+					if (h < 10) h = 10;
+					
+					console.log("NP: " + vec3.str(np) + " w " + w + " h " + h);
+
+					MapEditor.grabbed.setPosition(np);
+					MapEditor.grabbed.renderable.resize(w, h);
+				}
+				
 				break;
 		}
 	

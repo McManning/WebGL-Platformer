@@ -110,13 +110,29 @@ RenderableBox.prototype = new Renderable();
 RenderableBox.prototype.setScale = function(val) {
 	this.scale = val;
 	//vec3.scale(this.offset, val);
-	
+	/*
 	var w = this.width;
 	var t = this.thickness;
 
 	// Resize the children, rather than scaling them to maintain thickness
 	this.hRect.resize(w*val, t);
-	this.vRect.resize(t, w*val - 2*t);
+	this.vRect.resize(t, h*val - 2*t);
+	*/
+	this.resize(this.width, this.height);
+}
+
+/** 
+ * Change box dimensions without applying a scale
+ */
+RenderableBox.prototype.resize = function(w, h) {
+	this.width = w;
+	this.height = h;
+	
+	var s = this.scale;
+	var t = this.thickness;
+
+	this.hRect.resize(w*s, t);
+	this.vRect.resize(t, h*s - 2*t);
 }
 
 RenderableBox.prototype.render = function(position) {
