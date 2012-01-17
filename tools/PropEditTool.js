@@ -1,5 +1,6 @@
 
 var SCALE_FACTOR = 0.001;
+var COLLISION_MIN_THICKNESS = 20;
 
 PropEditAction = {
 	NONE : 0, 
@@ -22,7 +23,7 @@ PropEditTool.prototype.render = function() {
 PropEditTool.prototype.onKeyDown = function(keycode) {
 	
 	switch (keycode) {
-		case 81: // Q
+		case 81: { // Q
 			var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
 		
 			prop = new MapProp("./test.png", 128, 128);
@@ -31,16 +32,16 @@ PropEditTool.prototype.onKeyDown = function(keycode) {
 			prop.renderable.useSrcAlpha = true;
 			//prop.renderable.rotation = 0.45;
 			break;
-			
-		case 46: // del
+		}
+		case 46: { // del
 			MapEditor.deleteGrabbedEntity();
 			break;
-			
-		case 82: // R
+		}	
+		case 82: { // R
 			MapEditor.resetGrabbedEntity();
 			break;
-			
-		case 67: // C
+		}	
+		case 67: { // C
 		
 			var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
 		
@@ -48,6 +49,7 @@ PropEditTool.prototype.onKeyDown = function(keycode) {
 			MapEditor.addProp(prop); // @todo different array for collisions!
 			prop.setPosition(pos);
 			break;
+		}
 	}
 }
 
@@ -83,13 +85,7 @@ PropEditTool.prototype.onMouseDown = function(pos) {
 			if (g_pressedKeys[17]) { // ctrl + click
 			
 				this.action = PropEditAction.SCALE;
-			
-				// get initial distance from origin
-				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
-				vec3.subtract(pos, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
-			
-				this.initialDistance = vec3.length(pos);
-				
+
 			} else {
 			
 				this.action = PropEditAction.ROTATE;
@@ -118,7 +114,7 @@ PropEditTool.prototype.onUpdate = function() {
 	if (MapEditor.grabbed) {
 
 		switch (this.action) {
-			case PropEditAction.TRANSLATE:
+			case PropEditAction.TRANSLATE: {
 			
 				pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
 		
@@ -127,8 +123,8 @@ PropEditTool.prototype.onUpdate = function() {
 				MapEditor.grabrect.position = pos;
 				
 				break;
-			
-			case PropEditAction.ROTATE:
+			}
+			case PropEditAction.ROTATE: {
 
 				// Get the new position of the cursor relative to the objects origin
 				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
@@ -158,75 +154,56 @@ PropEditTool.prototype.onUpdate = function() {
 				}
 					
 				break;
-				
-			case PropEditAction.SCALE:
-			
-				/* 	@todo: Proper (working) implementation. Since I haven't written in 
-					scale code anyway for the renderables, I'm in no hurry. 
-				*/
-			
-				
-				pos = MapCamera.canvasVec3ToWorld(g_mousePosition); // world pos of mouse
+			}
+			case PropEditAction.SCALE: {
+
+				pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
 				
 				if (MapEditor.grabbed instanceof MapProp) {
 					
-					// convert to distance from corner of object
-					vec3.subtract(pos, MapEditor.grabbed.renderable.getBottomLeft());
-				
-					var d = vec3.length(pos) - this.initialDistance;
-					
-					//MapEditor.setGrabbedScale(1.0 + d * SCALE_FACTOR);
-					//console.log("New Scale: " + MapEditor.grabbed.renderable.scale);
-					
-					// experimental
+					// convert to distance from center of object
+					vec3.subtract(pos, MapEditor.grabbed.renderable.getCenter());
+
 					MapEditor.grabbed.renderable.localizePoint(pos);
-					// localized to topleft?
-					
-					//pos[0] += MapEditor.grabbed.renderable.width;
-					console.log(vec3.str(pos));
-					
-					var d = vec3.length(pos);
-					var s = MapEditor.grabbed.renderable.scale;
-					var w = MapEditor.grabbed.renderable.width * s;
-					var h = MapEditor.grabbed.renderable.height * s;
-					
-					var d0 = Math.sqrt(w*w + h*h);
-					MapEditor.setGrabbedScale(d / d0);
+
+					var d = vec3.length(pos) * 2;
+
+					if (d != 0) {
+						var s = MapEditor.grabbed.renderable.scale;
+						var w = MapEditor.grabbed.renderable.width * s;
+						var h = MapEditor.grabbed.renderable.height * s;
+						
+						var d0 = Math.sqrt(w*w + h*h);
+						MapEditor.setGrabbedScale(d / d0);
+					}
 					
 				} else {
-					console.log(vec3.str(pos));
-					
-					// calculate new bounds, width/height is Math.abs(pos)
-					// readjust origin 
-					var p = vec3.create(MapEditor.grabbed.getPosition());
-				/*	if (pos[1] < 0)
-						p[1] += pos[1];
-					
-					if (pos[0] < 0)
-						p[0] += pos[0];
-					*/
-					
-					/*
-						point 2 is pos. Point p. Calculate new rect */
-					var np = vec3.create();
-					np[0] = Math.min(pos[0], p[0]);
-					np[1] = Math.min(pos[1], p[1]);
-					
-					var w = Math.abs(pos[0] - p[0]);
-					var h = Math.abs(pos[1] - p[1]);
-					
-					if (w < 10) w = 10;
-					if (h < 10) h = 10;
-					
-					console.log("NP: " + vec3.str(np) + " w " + w + " h " + h);
 
-					MapEditor.grabbed.setPosition(np);
-					MapEditor.grabbed.renderable.resize(w, h);
+					vec3.subtract(pos, MapEditor.grabbed.renderable.getCenter());
+					//MapEditor.grabbed.renderable.localizePoint(pos);
+
+					// figure out which axis to manipulate and do so
+					var tl = MapEditor.grabbed.renderable.getTopLeft();
+					var br = MapEditor.grabbed.renderable.getBottomRight();
 					
+					var w, h;
 					
+					// bound it to bottom right quadrant
+					if (pos[0] > COLLISION_MIN_THICKNESS)
+						w = pos[0] * 2;
+					else
+						w = COLLISION_MIN_THICKNESS;
+
+					if (pos[1] < -COLLISION_MIN_THICKNESS)
+						h = -pos[1]*2;
+					else
+						h = COLLISION_MIN_THICKNESS;
+
+					MapEditor.resizeGrabbed(w, h);
 				}
 				
 				break;
+			}
 		}
 	
 	}

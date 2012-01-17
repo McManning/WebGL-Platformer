@@ -263,14 +263,11 @@ function start() {
 	mypic.rotation = 0.78539;
 	mypic.useSrcAlpha = true;
 	mypic.position = [500, 0, 0];
-	mypic.setOffset(RenderableOffset.CENTER);
-	
+
 	background = new RenderableImage("./background.png", 640*2, 480*2);
 	
 	testrect = new RenderableBox(300, 300, 10, [0.5, 0, 0.5]);
 	testrect.position = [100, 0, 0];
-	//testrect.setOffset(RenderableOffset.CENTER);
-
 
 	g_activeTool = new PropEditTool();
 	

@@ -13,7 +13,6 @@
 function MapProp(url, width, height) {
 
 	this.renderable = new RenderableImage(url, width, height);
-	this.renderable.setOffset(RenderableOffset.CENTER);
 }
 
 MapProp.prototype.render = function() {
@@ -52,7 +51,6 @@ MapProp.prototype.intersects = function(pos) {
 function MapCollision(width, height) {
 	
 	this.renderable = new RenderableBox(width, height, 5, [0, 0, 0]);
-	this.renderable.setOffset(RenderableOffset.CENTER);
 }
 
 MapCollision.prototype.render = function() {
@@ -138,7 +136,6 @@ MapEditor = {
 			
 			// match the parent entities position with our rectangle
 			this.grabrect.rotation = ent.renderable.rotation;
-			this.grabrect.offset = ent.renderable.offset;
 			this.grabrect.position = ent.getPosition();
 			this.grabrect.setScale(ent.renderable.scale);
 		}
@@ -180,6 +177,11 @@ MapEditor = {
 	setGrabbedScale : function(val) { 
 		this.grabbed.renderable.setScale(val);
 		this.grabrect.setScale(val);
+	},
+	
+	resizeGrabbed : function(w, h) {
+		this.grabbed.renderable.resize(w, h);
+		this.grabrect.resize(w, h);
 	},
 	
 	/**
