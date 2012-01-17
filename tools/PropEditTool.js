@@ -170,13 +170,28 @@ PropEditTool.prototype.onUpdate = function() {
 				
 				if (MapEditor.grabbed instanceof MapProp) {
 					
-					// convert to distance from origin of object
-					vec3.subtract(pos, MapEditor.grabbed.getPosition());
+					// convert to distance from corner of object
+					vec3.subtract(pos, MapEditor.grabbed.renderable.getBottomLeft());
 				
 					var d = vec3.length(pos) - this.initialDistance;
 					
-					MapEditor.setGrabbedScale(1.0 + d * SCALE_FACTOR);
-					console.log("New Scale: " + MapEditor.grabbed.renderable.scale);
+					//MapEditor.setGrabbedScale(1.0 + d * SCALE_FACTOR);
+					//console.log("New Scale: " + MapEditor.grabbed.renderable.scale);
+					
+					// experimental
+					MapEditor.grabbed.renderable.localizePoint(pos);
+					// localized to topleft?
+					
+					//pos[0] += MapEditor.grabbed.renderable.width;
+					console.log(vec3.str(pos));
+					
+					var d = vec3.length(pos);
+					var s = MapEditor.grabbed.renderable.scale;
+					var w = MapEditor.grabbed.renderable.width * s;
+					var h = MapEditor.grabbed.renderable.height * s;
+					
+					var d0 = Math.sqrt(w*w + h*h);
+					MapEditor.setGrabbedScale(d / d0);
 					
 				} else {
 					console.log(vec3.str(pos));
@@ -207,6 +222,8 @@ PropEditTool.prototype.onUpdate = function() {
 
 					MapEditor.grabbed.setPosition(np);
 					MapEditor.grabbed.renderable.resize(w, h);
+					
+					
 				}
 				
 				break;

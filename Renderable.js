@@ -21,6 +21,7 @@ function Renderable() {
 }
 
 Renderable.prototype.setOffset = function(offsetType) {
+	
 	switch (offsetType) {
 		case RenderableOffset.CENTER:
 			this.offset = [-this.width*0.5, -this.height*0.5, 0.0];
@@ -44,6 +45,8 @@ Renderable.prototype.beginDraw = function() {
 		mat4.rotateZ(gl.mvMatrix, this.rotation);
 	}
 	
+	//var p = vec3.create(this.offset);
+	//vec3.scale(this.offset, this.scale);
 	mat4.translate(gl.mvMatrix, this.offset);
 	
 	if (this.useSrcAlpha) {
@@ -74,7 +77,9 @@ Renderable.prototype.intersectsBoundingBox = function(pos) {
 	
 	var dp = vec3.create(pos);
 	vec3.subtract(dp, this.position);
-
+	
+	//this.localizePoint(dp);
+/*
 	if (this.rotation != 0.0) {
 
 		// rotate the test point in the opposite direction
@@ -86,8 +91,29 @@ Renderable.prototype.intersectsBoundingBox = function(pos) {
 		r[1] = dp[0] * s + dp[1] * c;
 		vec3.set(r, dp);
 	}
+	*/
+/*	
+	// inversely localize the point
+	var x = dp[0] * this.scale;
+	var y = dp[1] * this.scale;
+	var r = -this.rotation;
 	
-	vec3.subtract(dp, this.offset);
+	if (r != 0.0) {
+		var c = Math.cos(r);
+		var s = Math.sin(r);
+		dp[0] = x * c - y * s;
+		dp[1] = x * s + y * c;
+	} else {
+		dp[0] = x;
+		dp[1] = y;
+	}
+	
+	var scaledOffset = vec3.create(this.offset);
+	vec3.scale(this.offset, this.scale);
+	
+	vec3.subtract(dp, scaledOffset);
+	console.log("dp: " + vec3.str(dp));
+	*/
 
 	return (dp[0] >= 0 && dp[0] <= this.width * this.scale 
 			&& dp[1] >= 0 && dp[1] <= this.height * this.scale);
@@ -263,13 +289,55 @@ function RenderableImage(url, width, height) {
 	this.tbuf.itemCount = 4;
 
 	// @todo create normal mapping
+	
+	this.debugTR = new RenderableRect(8, 8, [1, 0, 0]);
+	this.debugTR.setOffset(RenderableOffset.CENTER);
+	
+	this.debugBR = new RenderableRect(8, 8, [0, 0, 1]);
+	this.debugBR.setOffset(RenderableOffset.CENTER);
+	
+	this.debugBL = new RenderableRect(8, 8, [0, 1, 1]);
+	this.debugBL.setOffset(RenderableOffset.CENTER);
+	
+	this.debugTL = new RenderableRect(8, 8, [1, 1, 0]);
+	this.debugTL.setOffset(RenderableOffset.CENTER);
+	
+	this.debugC = new RenderableRect(8, 8, [1, 0, 1]);
+	this.debugC.setOffset(RenderableOffset.CENTER);
+	
+	
 }
 
 RenderableImage.prototype = new Renderable();
 
 RenderableImage.prototype.render = function() {
 
-	this.beginDraw();
+	//this.beginDraw();
+	
+	mvPushMatrix();
+
+	mat4.translate(gl.mvMatrix, this.getCenter());
+	
+	if (this.rotation != 0.0) {
+		mat4.rotateZ(gl.mvMatrix, this.rotation);
+	}
+	
+	//var p = vec3.create(this.offset);
+	//vec3.scale(this.offset, this.scale);
+	//mat4.translate(gl.mvMatrix, this.offset);
+	
+	if (this.useSrcAlpha) {
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+		gl.enable(gl.BLEND);
+	//	gl.disable(gl.DEPTH_TEST);
+	} else {
+		gl.disable(gl.BLEND);
+	//	gl.enable(gl.DEPTH_TEST);
+	}
+	
+	gl.uniform4f(shaderProgram.colorUniform, 
+				this.color[0], this.color[1],
+				this.color[2], this.color[3]);
 	
 	// Set up buffers to use
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vbuf);
@@ -289,13 +357,28 @@ RenderableImage.prototype.render = function() {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vbuf.itemCount);
 	
 	this.endDraw();
+	
+	// DEBUGGING
+	this.debugTR.position = this.getTopRight();
+	this.debugBR.position = this.getBottomRight();
+	this.debugBL.position = this.getBottomLeft();
+	this.debugTL.position = this.getTopLeft();
+	this.debugC.position = this.getCenter();
+	
+	this.debugTR.render();
+	this.debugBR.render();
+	this.debugBL.render();
+	this.debugTL.render();
+	this.debugC.render();
 }
 
 RenderableImage.prototype.setScale = function(val) {
 	this.scale = val;
-	//vec3.scale(this.offset, val);
 	
 	// @todo Should offsets scale with the object?
+	// calculate new offset
+	//this.offset[0] = this.width * val * 0.5;
+	//this.offset[1] = this.height * val * 0.5;
 	
 	if (this.vbuf)
 		gl.deleteBuffer(this.vbuf);
@@ -325,5 +408,81 @@ RenderableImage.prototype.buildVertexBuffer = function() {
 	this.vbuf.itemCount = 4;
 }
 
+/**
+ * Calculates the top right corner of our box, factoring in scale and rotation
+ * @return vec3 position of the top right point of our box
+ */
+RenderableImage.prototype.getTopRight = function() {
 
+	var p = vec3.create();
+	p[0] = this.width;
+	p[1] = this.height;
+	vec3.add(p, this.offset);
+	
+	this.localizePoint(p);
+	vec3.add(p, this.getCenter());
+	
+	return p;
+}
+
+RenderableImage.prototype.getTopLeft = function() {
+
+	var p = vec3.create();
+	p[1] = this.height;
+	vec3.add(p, this.offset);
+	
+	this.localizePoint(p);
+	vec3.add(p, this.getCenter());
+	
+	return p;
+}
+
+RenderableImage.prototype.getBottomRight = function() {
+	
+	var p = vec3.create();
+	p[0] = this.width;
+	vec3.add(p, this.offset);
+	
+	this.localizePoint(p);
+	vec3.add(p, this.getCenter());
+	
+	return p;
+}
+
+RenderableImage.prototype.getBottomLeft = function()  {
+	
+	var p = vec3.create(this.offset);
+	this.localizePoint(p);
+	vec3.add(p, this.getCenter());
+	
+	return p;
+}
+
+/**
+ * Will apply this Renderable's translation/scale to the supplied vec3
+ * @param pos vec3 point relative to the center of the Renderable
+ * @return pos
+ */
+RenderableImage.prototype.localizePoint = function(pos) {
+
+	var x = pos[0] * this.scale;
+	var y = pos[1] * this.scale;
+	var r = this.rotation;
+	
+	if (r != 0.0) {
+		var c = Math.cos(r);
+		var s = Math.sin(r);
+		pos[0] = x * c - y * s;
+		pos[1] = x * s + y * c;
+	} else {
+		pos[0] = x;
+		pos[1] = y;
+	}
+	
+	return pos;
+}
+
+RenderableImage.prototype.getCenter = function() {
+	return this.position;
+}
 
