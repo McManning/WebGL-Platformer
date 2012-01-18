@@ -13,7 +13,7 @@ function loadFragmentShader() {
 
 	gl.compileShader(shader);
 	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		alert("Fragment Shader Error: " + gl.getShaderInfoLog(shader));
+		throw ("Fragment Shader Error: " + gl.getShaderInfoLog(shader));
 	}
 	else
 	{
@@ -27,7 +27,7 @@ function loadVertexShader() {
 	
 	gl.compileShader(shader);
 	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		alert("Vertex Shader Error: " + gl.getShaderInfoLog(shader));
+		throw ("Vertex Shader Error: " + gl.getShaderInfoLog(shader));
 	}
 	else
 	{
@@ -187,10 +187,7 @@ MapCamera = {
 	canvasToWorld : function(x, y) {
 		
 		var result = vec3.create(this.position);
-		
-		//point.xy + camera.xy - canvas.xy
-		// assuming xy are relative to the canvas at this point and not the document
-		
+
 		result[0] += x;
 		result[1] += (gl.viewportHeight - y);
 
@@ -198,12 +195,11 @@ MapCamera = {
 	},
 	
 	canvasVec3ToWorld : function(pos) {
-		
+
 		var result = vec3.create(this.position);
-		
-		vec3.add(result, pos);
-		result[1] = gl.viewportHeight - pos[1];
-		
+		result[0] += pos[0];
+		result[1] += (gl.viewportHeight - pos[1]);
+
 		return result;
 	}
 
@@ -234,7 +230,7 @@ function start() {
 	mypic = new RenderableImage("./test.png", 512, 512); //484, 531);
 	mypic.rotation = 0.78539;
 	mypic.useSrcAlpha = true;
-	mypic.position = [500, 0, 0];
+	//mypic.position = [500, 0, 0];
 
 	background = new RenderableImage("./background.png", 640*2, 480*2);
 	
@@ -277,6 +273,7 @@ function drawScene() {
 	background.render();
 	testrect.render();
 	mypic.render();
+	MapEditor.renderableDebug.render(mypic);
 	
 	MapEditor.render();
 	

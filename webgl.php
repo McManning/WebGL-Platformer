@@ -5,10 +5,11 @@
 	$fs = file_get_contents('shaders/main.frag');
 	
 	// sanitize
-	$remove = array("\r", "\n");
-	$vs = str_replace($remove, " ", $vs);
-	$fs = str_replace($remove, " ", $fs);
+	$vs = str_replace("\r", "", $vs);
+	$fs = str_replace("\r", "", $fs);
 	
+	$vs = str_replace("\n", "\\\n", $vs);
+	$fs = str_replace("\n", "\\\n", $fs);
 ?>
 
 <html>
@@ -16,8 +17,9 @@
 
 <script type="text/javascript">
 	
-	var g_vertexShader = "<?php echo $vs; ?>";
-	var g_fragmentShader = "<?php echo $fs; ?>";
+var g_vertexShader = "<?php echo $vs; ?>";
+
+var g_fragmentShader = "<?php echo $fs; ?>";
 	
 </script>
 
