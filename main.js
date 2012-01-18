@@ -9,23 +9,7 @@ var g_pressedKeys = new Array();
 
 function loadFragmentShader() {
 	var shader = gl.createShader(gl.FRAGMENT_SHADER);
-	gl.shaderSource(shader, 
-"\
-precision highp float; \
-varying vec2 vTextureCoord; \
-uniform sampler2D uSampler; \
-uniform vec4 uColor; \
-void main(void) { \
-	if (uColor.a < 1.0) { \
-		gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)); \
-		if (uColor.a > 0.0) { \
-			gl_FragColor = gl_FragColor * uColor; /* @todo better blending */ \
-		} \
-	} else { \
-		gl_FragColor = uColor; \
-	} \
-} \
-");
+	gl.shaderSource(shader, g_fragmentShader);
 
 	gl.compileShader(shader);
 	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -39,19 +23,7 @@ void main(void) { \
 
 function loadVertexShader() {
 	var shader = gl.createShader(gl.VERTEX_SHADER);
-	gl.shaderSource(shader,
-"\
-attribute vec3 aVertexPosition; \
-attribute vec2 aTextureCoord; \
-uniform mat4 uMVMatrix; \
-uniform mat4 uPMatrix; \
-uniform vec4 uColor; \
-varying vec2 vTextureCoord; \
-void main(void) { \
-	gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0); \
-	vTextureCoord = aTextureCoord; \
-} \
-");
+	gl.shaderSource(shader, g_vertexShader);
 	
 	gl.compileShader(shader);
 	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {

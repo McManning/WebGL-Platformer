@@ -1,8 +1,25 @@
 
+<?php
+
+	$vs = file_get_contents('shaders/main.vert');
+	$fs = file_get_contents('shaders/main.frag');
+	
+	// sanitize
+	$remove = array("\r", "\n");
+	$vs = str_replace($remove, " ", $vs);
+	$fs = str_replace($remove, " ", $fs);
+	
+?>
 
 <html>
 <head>
 
+<script type="text/javascript">
+	
+	var g_vertexShader = "<?php echo $vs; ?>";
+	var g_fragmentShader = "<?php echo $fs; ?>";
+	
+</script>
 
 <script type="text/javascript" src="lib/webgl-utils.js"></script>
 <script type="text/javascript" src="lib/glMatrix.js"></script>

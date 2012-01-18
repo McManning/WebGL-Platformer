@@ -300,6 +300,7 @@ function RenderableImage(url, width, height) {
 	this.width = width;
 	this.height = height;
 	this.flipped = false;
+	this.hue = 0.0;
 	
 	// create texture from image
 	this.texture = loadTexture(url);
