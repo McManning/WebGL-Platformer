@@ -371,12 +371,20 @@ function onFocus() {
 
 function onKeyDown(e) {
 	e = e || window.event;
-	
+
 	g_pressedKeys[e.keyCode] = true;
 	
 	if (g_activeTool != null) {
 		g_activeTool.onKeyDown(e.keyCode);
 	}
+	
+	// override Page up/down keys
+	// @todo better placement of things like this
+	if (e.keyCode == 33 || e.keyCode == 34) {
+		//e.preventDefault(); // only for ctrl/alt shortcuts
+		return false;
+	}
+
 }
 
 function onKeyUp(e) {

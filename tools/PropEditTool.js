@@ -23,7 +23,7 @@ PropEditTool.prototype.render = function() {
 PropEditTool.prototype.onKeyDown = function(keycode) {
 	
 	switch (keycode) {
-		case 81: { // Q
+		case 81: { // Q - add test map prop
 			var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
 		
 			prop = new MapProp("./test.png", 128, 128);
@@ -33,21 +33,38 @@ PropEditTool.prototype.onKeyDown = function(keycode) {
 			//prop.renderable.rotation = 0.45;
 			break;
 		}
-		case 46: { // del
+		case 46: { // del - delete prop
 			MapEditor.deleteGrabbedEntity();
 			break;
 		}	
-		case 82: { // R
+		case 82: { // R - reset scale/rotation of prop
 			MapEditor.resetGrabbedEntity();
 			break;
 		}	
-		case 67: { // C
+		case 67: { // C - add collision prop
 		
 			var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
 		
 			prop = new MapCollision(128, 128);
 			MapEditor.addCollision(prop);
 			prop.setPosition(pos);
+			break;
+		}
+		case 33: { // Page Up - pull map prop z order
+			
+			MapEditor.pullGrabbed();
+			break;
+		}
+		case 34: { // Page Down - push map prop z order
+			
+			MapEditor.pushGrabbed();
+			break;
+		}
+		case 70: { // F - flip map prop
+			
+			if (MapEditor.grabbed instanceof MapProp) {
+				MapEditor.grabbed.renderable.flipHorizontal();
+			}
 			break;
 		}
 	}

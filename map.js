@@ -214,6 +214,44 @@ MapEditor = {
 	},
 	
 	/**
+	 * Pulls the grabbed entity up in Z-order
+	 */
+	pullGrabbed : function() {
+		
+		if (this.grabbed instanceof MapProp) {
+			
+			var len = this.props.length-1;
+			
+			for (var iter = 0; iter < len; iter++) {
+				if (this.props[iter] == this.grabbed) {
+					this.props[iter] = this.props[iter+1];
+					this.props[iter+1] = this.grabbed;
+					break;
+				}
+			}
+		}
+	},
+	
+	/**
+	 * Pushes the grabbed entity down in Z-order
+	 */
+	pushGrabbed : function() {
+		
+		if (this.grabbed instanceof MapProp) {
+			
+			var len = this.props.length;
+			
+			for (var iter = 1; iter < len; iter++) {
+				if (this.props[iter] == this.grabbed) {
+					this.props[iter] = this.props[iter-1];
+					this.props[iter-1] = this.grabbed;
+					break;
+				}
+			}
+		}
+	},
+	
+	/**
 	 * Goes through all props and renders them to the canvas
 	 */
 	render : function() {

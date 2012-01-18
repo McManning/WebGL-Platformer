@@ -257,9 +257,6 @@ RenderableRect.prototype.render = function() {
 RenderableRect.prototype.setScale = function(val) {
 	this.scale = val;
 
-	if (this.vbuf)
-		gl.deleteBuffer(this.vbuf);
-	
 	this.buildVertexBuffer();
 }
 
@@ -267,15 +264,15 @@ RenderableRect.prototype.resize = function(w, h) {
 	
 	this.width = w;
 	this.height = h;
-	
-	if (this.vbuf)
-		gl.deleteBuffer(this.vbuf);
-	
+
 	this.buildVertexBuffer();
 }
 
 RenderableRect.prototype.buildVertexBuffer = function() {
-
+	
+	if (this.vbuf)
+		gl.deleteBuffer(this.vbuf);
+		
 	var w = this.width * this.scale * 0.5;
 	var h = this.height * this.scale * 0.5;
 	
@@ -302,27 +299,14 @@ RenderableRect.prototype.buildVertexBuffer = function() {
 function RenderableImage(url, width, height) {
 	this.width = width;
 	this.height = height;
+	this.flipped = false;
 	
 	// create texture from image
 	this.texture = loadTexture(url);
 
 	this.buildVertexBuffer();
-
-	// Create texture mapping
-	this.tbuf = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.tbuf);
+	this.buildTextureBuffer();
 	
-	gl.bufferData(gl.ARRAY_BUFFER, 
-		new glMatrixArrayType([
-			1.0, 0.0,
-			1.0, 1.0,
-			0.0, 0.0,
-			0.0, 1.0
-		]), gl.STATIC_DRAW);
-		
-	this.tbuf.itemSize = 2;
-	this.tbuf.itemCount = 4;
-
 	// @todo create normal mapping
 }
 
@@ -355,14 +339,14 @@ RenderableImage.prototype.render = function() {
 RenderableImage.prototype.setScale = function(val) {
 	this.scale = val;
 
-	if (this.vbuf)
-		gl.deleteBuffer(this.vbuf);
-	
 	this.buildVertexBuffer();
 }
 
 RenderableImage.prototype.buildVertexBuffer = function() {
 	
+	if (this.vbuf)
+		gl.deleteBuffer(this.vbuf);
+		
 	var w = this.width * this.scale * 0.5;
 	var h = this.height * this.scale * 0.5;
 	
@@ -382,6 +366,44 @@ RenderableImage.prototype.buildVertexBuffer = function() {
 	this.vbuf.itemSize = 3;
 	this.vbuf.itemCount = 4;
 
+}
+
+RenderableImage.prototype.buildTextureBuffer = function() {
+	
+	if (this.tbuf)
+		gl.deleteBuffer(this.tbuf);
+		
+	// Create texture mapping
+	this.tbuf = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.tbuf);
+	
+	if (this.flipped) {
+		gl.bufferData(gl.ARRAY_BUFFER, 
+			new glMatrixArrayType([
+				0.0, 0.0,
+				0.0, 1.0,
+				1.0, 0.0,
+				1.0, 1.0
+			]), gl.STATIC_DRAW);
+	} else {
+		gl.bufferData(gl.ARRAY_BUFFER, 
+			new glMatrixArrayType([
+				1.0, 0.0,
+				1.0, 1.0,
+				0.0, 0.0,
+				0.0, 1.0
+			]), gl.STATIC_DRAW);
+	}
+		
+	this.tbuf.itemSize = 2;
+	this.tbuf.itemCount = 4;
+
+}
+
+RenderableImage.prototype.flipHorizontal = function() {
+	this.flipped = !this.flipped;
+
+	this.buildTextureBuffer();
 }
 
 //////////////////////////////////////////////////////////////////
