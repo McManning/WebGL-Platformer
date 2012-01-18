@@ -196,7 +196,7 @@ MapEditor = {
 	resetGrabbedEntity : function() {
 		this.setGrabbedScale(1.0);
 		this.setGrabbedRotation(0.0);
-		this.grabbed.renderable.hue = 0.0;
+		this.grabbed.renderable.HSVShift = vec3.create();
 	},
 	
 	setGrabbedRotation : function(theta) {

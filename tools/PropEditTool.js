@@ -1,7 +1,7 @@
 
 
 var COLLISION_MIN_THICKNESS = 20;
-var HUE_SHIFT_AMOUNT = 0.05;
+var HUE_SHIFT_AMOUNT = 0.02;
 
 PropEditAction = {
 	NONE : 0, 
@@ -10,13 +10,16 @@ PropEditAction = {
 	SCALE : 3
 }
 
+/**
+ * A tool to manipulate map props and collision objects. Gives the user the power 
+ * to select objects, translate/rotate/scale them, and change HSL modifiers. 
+ */
 function PropEditTool() {
 	this.inclick = false;
 	this.mousedown = false;
 	this.action = PropEditAction.NONE;
 }
 
-	
 PropEditTool.prototype.render = function() {
 
 }
@@ -128,6 +131,7 @@ PropEditTool.prototype.onMouseUp = function(pos) {
 PropEditTool.prototype.onUpdate = function() {
 
 	var pos;
+	var HSV;
 
 	if (MapEditor.grabbed) {
 
@@ -220,17 +224,35 @@ PropEditTool.prototype.onUpdate = function() {
 				break;
 			}
 			default: // check for hue change
-				if (g_pressedKeys[72]) { // H
+				
+				if (g_pressedKeys[72]) { // H - hue
 					// hue range is 0-6
-					var hue = MapEditor.grabbed.renderable.hue;
+					HSV = MapEditor.grabbed.renderable.HSVShift;
 
-					hue += HUE_SHIFT_AMOUNT;
-					if (hue >= 6.0)
-						hue = 6.0 - hue;
+					HSV[0] += HUE_SHIFT_AMOUNT;
+					if (HSV[0] >= 6.0)
+						HSV[0] = 6.0 - HSV[0];
+
+					console.log("hue: " + HSV[0]);
+					
+				} else if (g_pressedKeys[74]) { // J - saturation
+					
+					HSV = MapEditor.grabbed.renderable.HSVShift;
+				
+					if (HSV[1] >= 1.0)
+						HSV[1] = -2.0 + HSV[1];
 						
-					MapEditor.grabbed.renderable.hue = hue;
-						
-					console.log("hue: " + hue);
+					console.log("sat: " + HSV[1]);
+					
+				} else if (g_pressedKeys[76]) { // L - lightness
+				
+					HSV = MapEditor.grabbed.renderable.HSVShift;
+					
+					HSV[2] += HUE_SHIFT_AMOUNT;
+					if (HSV[2] >= 1.0)
+						HSV[2] = -2.0 + HSV[2];
+					
+					console.log("lit: " + HSV[2]);
 				}
 				break;
 		}

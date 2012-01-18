@@ -62,7 +62,7 @@ function initShaders() {
 	shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
 	shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 	shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
-	shaderProgram.hueShiftUniform = gl.getUniformLocation(shaderProgram, "uHueShift");
+	shaderProgram.HSVShiftUniform = gl.getUniformLocation(shaderProgram, "uHSVShift");
 }
 
 function initGL(canvas) {
@@ -234,6 +234,7 @@ function start() {
 	//mypic.position = [500, 0, 0];
 
 	background = new RenderableImage("./background.png", 640*2, 480*2);
+	background.position[0] = 1000;
 	
 	testrect = new RenderableBox(300, 300, 10, [0.5, 0, 0.5]);
 	testrect.position = [100, 0, 0];

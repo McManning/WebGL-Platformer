@@ -4,7 +4,11 @@ precision highp float;
 varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
 uniform vec4 uColor;
-uniform float uHueShift; /* Amount to shift the Hue, range 0 to 6 */
+
+/* Hue [0, 6], Sat [0, 1], Value [0, 1] */
+uniform vec3 uHSVShift;
+
+/* HSV adapted from nokola.com/blog/post/2010/02/09/Someone-Said-it-Was-Impossible-Hue-Shift-in-Pixel-Shader-20-(Silverlight).aspx */
 
 /* Converts the rgb value to hsv, where H's range is -1 to 5 */
 vec3 rgb_to_hsv(vec3 RGB)
@@ -76,10 +80,10 @@ void main(void) {
 	}
 	
 	/* Apply Hue transformation, if we got it */
-	if (uHueShift != 0.0) {
+	if (uHSVShift.x != 0.0 || uHSVShift.y != 0.0 || uHSVShift.z != 0.0) {
 	
 		vec3 hsv = rgb_to_hsv(gl_FragColor.xyz);
-		hsv.x += uHueShift;
+		hsv.x += uHSVShift.x;
 
 		/* Put the hue back to the -1, 5 range */
 		if (hsv.x > 5.0) 

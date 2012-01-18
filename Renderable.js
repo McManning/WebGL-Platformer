@@ -6,12 +6,15 @@ function Renderable() {
 	this.rotation = 0.0;
 	this.scale = 1.0;
 	this.useSrcAlpha = false;
-	this.hue = 0.0;
+	
 	this.width = 0;
 	this.height = 0;
-	this.position = vec3.create();
-
-	this.color = [0.0, 0.0, 0.0, 0.0]; // @todo vec4 or something
+	
+	// These objects are shared among all instances,
+	// must be initialized in inherited classes
+	//this.HSVShift = vec3.create();
+	//this.position = vec3.create();
+	//this.color = [0.0, 0.0, 0.0, 0.0]; // @todo vec4 or something
 }
 
 Renderable.prototype.beginDraw = function() {
@@ -39,7 +42,11 @@ Renderable.prototype.beginDraw = function() {
 				this.color[0], this.color[1],
 				this.color[2], this.color[3]);
 				
-	gl.uniform1f(shaderProgram.hueShiftUniform, this.hue);
+				
+	//console.log(this.HSVShift[0] + " " + this.position[0]);
+	gl.uniform3f(shaderProgram.HSVShiftUniform, 
+				this.HSVShift[0], this.HSVShift[1], 
+				this.HSVShift[2]);
 	
 }
 
@@ -162,6 +169,9 @@ function RenderableBox(width, height, thickness, color) {
 	this.height = height;
 	this.thickness = thickness;
 	this.color = color;
+	
+	this.HSVShift = vec3.create();
+	this.position = vec3.create();
 
 	this.hRect = new RenderableRect(width, thickness, color);
 	this.vRect = new RenderableRect(thickness, width - 2*thickness, color);
@@ -228,6 +238,9 @@ function RenderableRect(width, height, color) {
 	this.width = width;
 	this.height = height;
 	this.color = color;
+	
+	this.HSVShift = vec3.create();
+	this.position = vec3.create();
 	
 	if (color == null || color.length < 3) {
 		throw "Invalid color array length";
@@ -303,7 +316,11 @@ function RenderableImage(url, width, height) {
 	this.width = width;
 	this.height = height;
 	this.flipped = false;
+	this.color = [0.0, 0.0, 0.0, 0.0];
 	
+	this.HSVShift = vec3.create();
+	this.position = vec3.create();
+
 	// create texture from image
 	this.texture = loadTexture(url);
 
