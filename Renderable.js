@@ -41,6 +41,7 @@ Renderable.prototype.beginDraw = function() {
 }
 
 Renderable.prototype.endDraw = function() {
+
 	mvPopMatrix();
 }
 
@@ -76,6 +77,81 @@ Renderable.prototype.intersectsBoundingBox = function(pos) {
 			&& dp[1] >= -h && dp[1] <= h);
 }
 
+/**
+ * Calculates the top right corner of our box, factoring in scale and rotation
+ * @return vec3 position of the top right point of our box
+ */
+Renderable.prototype.getTopRight = function() {
+
+	var p = vec3.create();
+	p[0] = this.width * 0.5;
+	p[1] = this.height * 0.5;
+
+	this.localizePoint(p);
+
+	return p;
+}
+
+Renderable.prototype.getTopLeft = function() {
+
+	var p = vec3.create();
+	p[0] = -this.width * 0.5;
+	p[1] = this.height * 0.5;
+
+	this.localizePoint(p);
+
+	return p;
+}
+
+Renderable.prototype.getBottomRight = function() {
+	
+	var p = vec3.create();
+	p[0] = this.width * 0.5;
+	p[1] = -this.height * 0.5;
+
+	this.localizePoint(p);
+
+	return p;
+}
+
+Renderable.prototype.getBottomLeft = function()  {
+	
+	var p = vec3.create();
+	p[0] = -this.width * 0.5;
+	p[1] = -this.height * 0.5;
+	
+	this.localizePoint(p);
+	return p;
+}
+
+/**
+ * Will apply this Renderable's translation/scale to the supplied vec3
+ * @param pos vec3 point relative to the center of the Renderable
+ * @return pos
+ */
+Renderable.prototype.localizePoint = function(pos) {
+
+	var x = pos[0] * this.scale;
+	var y = pos[1] * this.scale;
+	var r = this.rotation;
+	
+	if (r != 0.0) {
+		var c = Math.cos(r);
+		var s = Math.sin(r);
+		pos[0] = x * c - y * s;
+		pos[1] = x * s + y * c;
+	} else {
+		pos[0] = x;
+		pos[1] = y;
+	}
+	
+	return pos;
+}
+
+Renderable.prototype.getCenter = function() {
+	return this.position;
+}
+
 //////////////////////////////////////////////////////////////////
 
 function RenderableBox(width, height, thickness, color) {
@@ -86,12 +162,6 @@ function RenderableBox(width, height, thickness, color) {
 
 	this.hRect = new RenderableRect(width, thickness, color);
 	this.vRect = new RenderableRect(thickness, width - 2*thickness, color);
-
-	this.debugTR = new RenderableRect(12, 12, [1, 0, 0]);
-	this.debugBR = new RenderableRect(12, 12, [0, 0, 1]);
-	this.debugBL = new RenderableRect(12, 12, [0, 1, 1]);
-	this.debugTL = new RenderableRect(12, 12, [1, 1, 0]);
-	this.debugC = new RenderableRect(12, 12, [1, 0, 1]);
 }
 
 RenderableBox.prototype = new Renderable();
@@ -147,23 +217,6 @@ RenderableBox.prototype.render = function() {
 	this.vRect.render();
 
 	this.endDraw();
-
-	// DEBUGGING
-	this.debugTR.position = this.getTopRight();
-	vec3.add(this.debugTR.position, this.getCenter());
-	this.debugBR.position = this.getBottomRight();
-	vec3.add(this.debugBR.position, this.getCenter());
-	this.debugBL.position = this.getBottomLeft();
-	vec3.add(this.debugBL.position, this.getCenter());
-	this.debugTL.position = this.getTopLeft();
-	vec3.add(this.debugTL.position, this.getCenter());
-	this.debugC.position = vec3.create(this.getCenter());
-
-	this.debugTR.render();
-	this.debugBR.render();
-	this.debugBL.render();
-	this.debugTL.render();
-	this.debugC.render();
 }
 
 //////////////////////////////////////////////////////////////////
@@ -271,13 +324,6 @@ function RenderableImage(url, width, height) {
 	this.tbuf.itemCount = 4;
 
 	// @todo create normal mapping
-	
-	this.debugTR = new RenderableRect(8, 8, [1, 0, 0]);
-	this.debugBR = new RenderableRect(8, 8, [0, 0, 1]);
-	this.debugBL = new RenderableRect(8, 8, [0, 1, 1]);
-	this.debugTL = new RenderableRect(8, 8, [1, 1, 0]);
-	this.debugC = new RenderableRect(8, 8, [1, 0, 1]);
-
 }
 
 RenderableImage.prototype = new Renderable();
@@ -304,23 +350,6 @@ RenderableImage.prototype.render = function() {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vbuf.itemCount);
 	
 	this.endDraw();
-	
-	// DEBUGGING
-	this.debugTR.position = this.getTopRight();
-	vec3.add(this.debugTR.position, this.getCenter());
-	this.debugBR.position = this.getBottomRight();
-	vec3.add(this.debugBR.position, this.getCenter());
-	this.debugBL.position = this.getBottomLeft();
-	vec3.add(this.debugBL.position, this.getCenter());
-	this.debugTL.position = this.getTopLeft();
-	vec3.add(this.debugTL.position, this.getCenter());
-	this.debugC.position = vec3.create(this.getCenter());
-
-	this.debugTR.render();
-	this.debugBR.render();
-	this.debugBL.render();
-	this.debugTL.render();
-	this.debugC.render();
 }
 
 RenderableImage.prototype.setScale = function(val) {
@@ -355,78 +384,37 @@ RenderableImage.prototype.buildVertexBuffer = function() {
 
 }
 
-/**
- * Calculates the top right corner of our box, factoring in scale and rotation
- * @return vec3 position of the top right point of our box
- */
-Renderable.prototype.getTopRight = function() {
-
-	var p = vec3.create();
-	p[0] = this.width * 0.5;
-	p[1] = this.height * 0.5;
-
-	this.localizePoint(p);
-
-	return p;
-}
-
-Renderable.prototype.getTopLeft = function() {
-
-	var p = vec3.create();
-	p[0] = -this.width * 0.5;
-	p[1] = this.height * 0.5;
-
-	this.localizePoint(p);
-
-	return p;
-}
-
-Renderable.prototype.getBottomRight = function() {
-	
-	var p = vec3.create();
-	p[0] = this.width * 0.5;
-	p[1] = -this.height * 0.5;
-
-	this.localizePoint(p);
-
-	return p;
-}
-
-Renderable.prototype.getBottomLeft = function()  {
-	
-	var p = vec3.create();
-	p[0] = -this.width * 0.5;
-	p[1] = -this.height * 0.5;
-	
-	this.localizePoint(p);
-	return p;
-}
+//////////////////////////////////////////////////////////////////
 
 /**
- * Will apply this Renderable's translation/scale to the supplied vec3
- * @param pos vec3 point relative to the center of the Renderable
- * @return pos
+ * Draws various icons for a Renderable object 
  */
-Renderable.prototype.localizePoint = function(pos) {
-
-	var x = pos[0] * this.scale;
-	var y = pos[1] * this.scale;
-	var r = this.rotation;
-	
-	if (r != 0.0) {
-		var c = Math.cos(r);
-		var s = Math.sin(r);
-		pos[0] = x * c - y * s;
-		pos[1] = x * s + y * c;
-	} else {
-		pos[0] = x;
-		pos[1] = y;
-	}
-	
-	return pos;
+function RenderableDebugger() {
+	this.debugTR = new RenderableRect(8, 8, [1, 0, 0]);
+	this.debugBR = new RenderableRect(8, 8, [0, 0, 1]);
+	this.debugBL = new RenderableRect(8, 8, [0, 1, 1]);
+	this.debugTL = new RenderableRect(8, 8, [1, 1, 0]);
+	this.debugC = new RenderableRect(8, 8, [1, 0, 1]);
 }
 
-Renderable.prototype.getCenter = function() {
-	return this.position;
+RenderableDebugger.prototype.render = function(parent) {
+
+	// DEBUGGING
+	this.debugTR.position = parent.getTopRight();
+	vec3.add(this.debugTR.position, parent.getCenter());
+	this.debugBR.position = parent.getBottomRight();
+	vec3.add(this.debugBR.position, parent.getCenter());
+	this.debugBL.position = parent.getBottomLeft();
+	vec3.add(this.debugBL.position, parent.getCenter());
+	this.debugTL.position = parent.getTopLeft();
+	vec3.add(this.debugTL.position, parent.getCenter());
+	this.debugC.position = vec3.create(parent.getCenter());
+
+	this.debugTR.render();
+	this.debugBR.render();
+	this.debugBL.render();
+	this.debugTL.render();
+	this.debugC.render();
 }
+
 

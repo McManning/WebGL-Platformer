@@ -1,5 +1,5 @@
 
-var SCALE_FACTOR = 0.001;
+
 var COLLISION_MIN_THICKNESS = 20;
 
 PropEditAction = {

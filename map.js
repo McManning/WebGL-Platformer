@@ -81,6 +81,8 @@ MapEditor = {
 		// this.triggers = [];
 		
 		this.grabbed = null;
+		
+		this.renderableDebug = new RenderableDebugger();
 	},
 	
 	addProp : function(prop) {
@@ -192,6 +194,7 @@ MapEditor = {
 		for (var iter in this.props) {
 			if (MapEditor.isPropVisible(this.props[iter])) {
 				this.props[iter].render();
+				this.renderableDebug.render(this.props[iter].renderable);
 			}
 		}
 		
