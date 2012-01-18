@@ -46,7 +46,7 @@ PropEditTool.prototype.onKeyDown = function(keycode) {
 			var pos = MapCamera.canvasVec3ToWorld(g_mousePosition);
 		
 			prop = new MapCollision(128, 128);
-			MapEditor.addProp(prop); // @todo different array for collisions!
+			MapEditor.addCollision(prop);
 			prop.setPosition(pos);
 			break;
 		}
@@ -66,7 +66,7 @@ PropEditTool.prototype.onMouseDown = function(pos) {
 	
 		pos = MapCamera.canvasVec3ToWorld(pos);
 		
-		var prop = MapEditor.pickProp(pos, true);
+		var prop = MapEditor.pickEntity(pos, true);
 		MapEditor.setGrabbedEntity(prop);
 
 	} else if (MapEditor.grabbed != null) {
@@ -131,17 +131,14 @@ PropEditTool.prototype.onUpdate = function() {
 				vec3.subtract(pos, MapEditor.grabbed.getPosition()); // relative pos of mouse to object
 				vec3.normalize(pos);
 
+				// @todo stop jerky behavior when this.rotationStart isn't directly above
+				// the getCenter() of our prop
+				
 				//	Calculate the angle between the vectors made by both points
 				var dot = vec3.dot(this.rotationStart, pos);
-				var theta = Math.acos(dot);
-
-				// @todo: clean this up, please
-
-				if (isNaN(theta)) {
-					throw "Fix this fucking NaN error";
-				} else {
-					//console.log("Dot: " + dot + "Delta Theta: " + theta + " start " + vec3.str(this.rotationStart)
-					//			+ " end: " + vec3.str(pos));
+				if (dot >= -1 && dot <= 1) {
+					
+					var theta = Math.acos(dot);
 
 					// apply adjustments for OpenGL quirks
 					if (pos[0] < 0)
@@ -152,7 +149,7 @@ PropEditTool.prototype.onUpdate = function() {
 						
 					MapEditor.setGrabbedRotation(this.oldRotation + theta);
 				}
-					
+			
 				break;
 			}
 			case PropEditAction.SCALE: {

@@ -77,6 +77,7 @@ MapEditor = {
 	initialize : function() {
 	
 		this.props = new Array();
+		this.collisions = new Array();
 		// this.lights = [];
 		// this.triggers = [];
 		
@@ -85,26 +86,38 @@ MapEditor = {
 		this.renderableDebug = new RenderableDebugger();
 	},
 	
-	addProp : function(prop) {
-		this.props.push(prop);
+	addProp : function(ent) {
+		this.props.push(ent);
+	},
+	
+	addCollision : function(ent) {
+		this.collisions.push(ent);
 	},
 	
 	/** 
-	 * Locates and returns the topmost prop at the specified position
+	 * Locates and returns the topmost entity at the specified position
 	 * @param pos vec3 location in world coordinates
 	 * @param ignoreCurrent bool if true, will skip over this.grabbed
 	 */
-	pickProp : function(pos, ignoreCurrent) {
-		var iter;
+	pickEntity : function(pos, ignoreCurrent) {
+		
+		var ent = this.pickEntityFromList(this.props, pos, ignoreCurrent);
+		
+		if (!ent) {
+			ent = this.pickEntityFromList(this.collisions, pos, ignoreCurrent);
+		}
+		
+		return ent;
+	},
 	
-		// Create coordinates relative to the camera
-		var len = this.props.length;
+	pickEntityFromList : function(list, pos, ignoreCurrent) {
+		var len = list.length;
 		
 		// most forward props are at the end of the array, reverse iterate
-		for (iter = len - 1; iter >= 0; iter--) {
-			if (this.props[iter].intersects(pos) 
-				&& (!ignoreCurrent || this.props[iter] != this.grabbed)) {
-				return this.props[iter];
+		for (var iter = len - 1; iter >= 0; iter--) {
+			if (list[iter].intersects(pos) 
+				&& (!ignoreCurrent || list[iter] != this.grabbed)) {
+				return list[iter];
 			}
 		}
 		
@@ -152,23 +165,37 @@ MapEditor = {
 		
 		if (this.grabbed) {
 			ent = this.grabbed;
-			MapEditor.setGrabbedEntity(null);
+			this.setGrabbedEntity(null);
 			
-			for (var iter in this.props) {
-				if (this.props[iter] == ent) {
-					this.props.splice(iter, 1);
-					break;
-				}
+			if (ent instanceof MapProp)
+				this.deleteEntityFromList(this.props, ent);
+			else
+				this.deleteEntityFromList(this.collisions, ent);
+		}
+	},
+	
+	/** 
+	 * @return true if the entity was found and erased, false otherwise 
+	 */
+	deleteEntityFromList : function(list, ent) {
+	
+		var len = list.length;
+		for (var iter = 0; iter < len; iter++) {
+			if (list[iter] == ent) {
+				list.splice(iter, 1);
+				return true;
 			}
 		}
+		
+		return false;
 	},
 	
 	/**
 	 * Resets properties of the grabbed entity to defaults
 	 */
 	resetGrabbedEntity : function() {
-		MapEditor.setGrabbedScale(1.0);
-		MapEditor.setGrabbedRotation(0.0);
+		this.setGrabbedScale(1.0);
+		this.setGrabbedRotation(0.0);
 	},
 	
 	setGrabbedRotation : function(theta) {
@@ -191,20 +218,21 @@ MapEditor = {
 	 */
 	render : function() {
 	
-		for (var iter in this.props) {
-			if (MapEditor.isPropVisible(this.props[iter])) {
-				this.props[iter].render();
-				this.renderableDebug.render(this.props[iter].renderable);
-			}
-		}
+		this.renderList(this.props);
+		this.renderList(this.collisions);
 		
 		if (this.grabrect != null) {
 			this.grabrect.render();
 		}
 	},
 	
-	isPropVisible : function(prop) {
-		return true; // @todo this
+	renderList : function(list) {
+	
+		var len = list.length;
+		for (var iter = 0; iter < len; iter++) {
+			list[iter].render();
+			this.renderableDebug.render(list[iter].renderable);
+		}
 	}
 	
 };
