@@ -286,6 +286,7 @@ function heartbeat() {
 	
 	// stuff that should go into steady timers...
 	handleKeyboard();
+	MapEditor.onUpdate();
 	if (g_activeTool != null) {
 		g_activeTool.onUpdate();
 	}

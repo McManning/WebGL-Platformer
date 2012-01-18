@@ -82,6 +82,11 @@ MapEditor = {
 		// this.triggers = [];
 		
 		this.grabbed = null;
+		this.hovered = null;
+		this.oldmouse = vec3.create();
+		
+		this.hoverrect = new RenderableBox(10, 10, 2, [0.6, 0.6, 0.6]);
+		this.grabrect = new RenderableBox(10, 10, 5, [0, 1, 0]);
 		
 		this.renderableDebug = new RenderableDebugger();
 	},
@@ -138,18 +143,13 @@ MapEditor = {
 	
 	setGrabbedEntity : function(ent) {
 		this.grabbed = ent;
-		
-		if (this.grabrect != null) {
-			delete this.grabrect;
-		}
-		
+
 		// Create a rectangle around the entity to indicate that it's grabbed
 		if (ent != null) {
 			console.log("Grabbed prop at " + vec3.str(ent.getPosition()));
 		
-			this.grabrect = new RenderableBox(ent.renderable.width, ent.renderable.height, 5, [0, 1, 0]);
-			
 			// match the parent entities position with our rectangle
+			this.grabrect.resize(ent.renderable.width, ent.renderable.height);
 			this.grabrect.rotation = ent.renderable.rotation;
 			this.grabrect.position = ent.getPosition();
 			this.grabrect.setScale(ent.renderable.scale);
@@ -220,8 +220,12 @@ MapEditor = {
 	
 		this.renderList(this.props);
 		this.renderList(this.collisions);
-		
-		if (this.grabrect != null) {
+
+		if (this.hovered) {
+			this.hoverrect.render();
+		}
+				
+		if (this.grabbed) {
 			this.grabrect.render();
 		}
 	},
@@ -232,6 +236,30 @@ MapEditor = {
 		for (var iter = 0; iter < len; iter++) {
 			list[iter].render();
 			this.renderableDebug.render(list[iter].renderable);
+		}
+	},
+
+	onUpdate : function() {
+	
+		// @todo relocate this to a proper timer that isn't so active
+		if (this.oldmouse[0] != g_mousePosition[0] 
+			|| this.oldmouse[1] != g_mousePosition[1]) {
+
+			vec3.set(g_mousePosition, this.oldmouse);
+			
+			var ent = this.pickEntity(MapCamera.canvasVec3ToWorld(g_mousePosition), true);
+			
+			if (this.hovered != ent) {
+				this.hovered = ent;
+				
+				if (ent) {
+					this.hoverrect.position = ent.getPosition();
+					this.hoverrect.resize(ent.renderable.width, ent.renderable.height);
+					this.hoverrect.rotation = ent.renderable.rotation;
+					this.hoverrect.position = ent.getPosition();
+					this.hoverrect.setScale(ent.renderable.scale);
+				}
+			}
 		}
 	}
 	
