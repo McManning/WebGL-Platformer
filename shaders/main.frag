@@ -83,7 +83,7 @@ void main(void) {
 	if (uHSVShift.x != 0.0 || uHSVShift.y != 0.0 || uHSVShift.z != 0.0) {
 	
 		vec3 hsv = rgb_to_hsv(gl_FragColor.xyz);
-		hsv.x += uHSVShift.x;
+		hsv += uHSVShift;
 
 		/* Put the hue back to the -1, 5 range */
 		if (hsv.x > 5.0) 

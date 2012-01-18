@@ -32,19 +32,6 @@ MapProp.prototype.getPosition = function() {
  */
 MapProp.prototype.intersects = function(pos) {
 	
-	// @todo compare position & dimensions to coordinates
-	// Also have to take in account rotation and whatnot
-	// See: http://stackoverflow.com/questions/1240660/check-if-a-point-is-in-a-rotated-rectangle-c
-	
-	// lazy distance formula for now
-	// @todo this isn't actually the center. Never calculated in offsets.
-	/*var i = this.renderable.position[0] - pos[0];
-	var j = this.renderable.position[1] - pos[1];
-
-	var d = Math.sqrt(i*i + j*j);
-
-	return d < Math.min(this.renderable.width, this.renderable.height);
-	*/
 	return this.renderable.intersectsBoundingBox(pos);
 }
 
@@ -149,9 +136,9 @@ MapEditor = {
 			console.log("Grabbed prop at " + vec3.str(ent.getPosition()));
 		
 			// match the parent entities position with our rectangle
+			vec3.set(ent.getPosition(), this.grabrect.position);
 			this.grabrect.resize(ent.renderable.width, ent.renderable.height);
 			this.grabrect.rotation = ent.renderable.rotation;
-			this.grabrect.position = ent.getPosition();
 			this.grabrect.setScale(ent.renderable.scale);
 		}
 	},
@@ -292,10 +279,9 @@ MapEditor = {
 				this.hovered = ent;
 				
 				if (ent) {
-					this.hoverrect.position = ent.getPosition();
+					vec3.set(ent.getPosition(), this.hoverrect.position);
 					this.hoverrect.resize(ent.renderable.width, ent.renderable.height);
 					this.hoverrect.rotation = ent.renderable.rotation;
-					this.hoverrect.position = ent.getPosition();
 					this.hoverrect.setScale(ent.renderable.scale);
 				}
 			}

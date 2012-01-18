@@ -142,7 +142,7 @@ PropEditTool.prototype.onUpdate = function() {
 		
 				vec3.add(pos, this.grabOffset);
 				MapEditor.grabbed.setPosition(pos);
-				MapEditor.grabrect.position = pos;
+				vec3.set(pos, MapEditor.grabrect.position);
 				
 				break;
 			}
@@ -229,30 +229,25 @@ PropEditTool.prototype.onUpdate = function() {
 					// hue range is 0-6
 					HSV = MapEditor.grabbed.renderable.HSVShift;
 
-					HSV[0] += HUE_SHIFT_AMOUNT;
+					HSV[0] += 0.005;
 					if (HSV[0] >= 6.0)
 						HSV[0] = 6.0 - HSV[0];
 
-					console.log("hue: " + HSV[0]);
-					
 				} else if (g_pressedKeys[74]) { // J - saturation
 					
 					HSV = MapEditor.grabbed.renderable.HSVShift;
 				
+					HSV[1] += 0.005;
 					if (HSV[1] >= 1.0)
 						HSV[1] = -2.0 + HSV[1];
-						
-					console.log("sat: " + HSV[1]);
 					
-				} else if (g_pressedKeys[76]) { // L - lightness
+				} else if (g_pressedKeys[75]) { // K - value
 				
 					HSV = MapEditor.grabbed.renderable.HSVShift;
 					
-					HSV[2] += HUE_SHIFT_AMOUNT;
+					HSV[2] += 0.01;
 					if (HSV[2] >= 1.0)
 						HSV[2] = -2.0 + HSV[2];
-					
-					console.log("lit: " + HSV[2]);
 				}
 				break;
 		}
