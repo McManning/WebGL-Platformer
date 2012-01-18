@@ -76,15 +76,15 @@ void main(void) {
 	}
 	
 	/* Apply Hue transformation, if we got it */
-	/*if (uHueShift != 0.0) {
+	if (uHueShift != 0.0) {
 	
 		vec3 hsv = rgb_to_hsv(gl_FragColor.xyz);
 		hsv.x += uHueShift;
 
-		// Put the hue back to the -1, 5 range
+		/* Put the hue back to the -1, 5 range */
 		if (hsv.x > 5.0) 
 			hsv.x -= 6.0;
 
 		gl_FragColor = vec4(hsv_to_rgb(hsv), gl_FragColor.a);
-	}*/
+	}
 }

@@ -6,6 +6,7 @@ function Renderable() {
 	this.rotation = 0.0;
 	this.scale = 1.0;
 	this.useSrcAlpha = false;
+	this.hue = 0.0;
 	this.width = 0;
 	this.height = 0;
 	this.position = vec3.create();
@@ -37,6 +38,8 @@ Renderable.prototype.beginDraw = function() {
 	gl.uniform4f(shaderProgram.colorUniform, 
 				this.color[0], this.color[1],
 				this.color[2], this.color[3]);
+				
+	gl.uniform1f(shaderProgram.hueShiftUniform, this.hue);
 	
 }
 
@@ -300,7 +303,6 @@ function RenderableImage(url, width, height) {
 	this.width = width;
 	this.height = height;
 	this.flipped = false;
-	this.hue = 0.0;
 	
 	// create texture from image
 	this.texture = loadTexture(url);

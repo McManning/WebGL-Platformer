@@ -1,6 +1,7 @@
 
 
 var COLLISION_MIN_THICKNESS = 20;
+var HUE_SHIFT_AMOUNT = 0.05;
 
 PropEditAction = {
 	NONE : 0, 
@@ -218,6 +219,20 @@ PropEditTool.prototype.onUpdate = function() {
 				
 				break;
 			}
+			default: // check for hue change
+				if (g_pressedKeys[72]) { // H
+					// hue range is 0-6
+					var hue = MapEditor.grabbed.renderable.hue;
+
+					hue += HUE_SHIFT_AMOUNT;
+					if (hue >= 6.0)
+						hue = 6.0 - hue;
+						
+					MapEditor.grabbed.renderable.hue = hue;
+						
+					console.log("hue: " + hue);
+				}
+				break;
 		}
 	
 	}
