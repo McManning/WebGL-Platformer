@@ -8,4 +8,7 @@ $(document).ready(function() {
 		MapEditor.setEditMode( parseInt($(this).val()) );
 	});
 	
+	$('.prop').click(function() {
+		MapEditor.addPropByName( $(this).attr('src') );
+	});
 });

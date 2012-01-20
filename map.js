@@ -310,6 +310,18 @@ MapEditor = {
 	setEditMode : function(mode) {
 		this.editMode = mode;
 		this.setGrabbedEntity(null);
+	},
+	
+	addPropByName : function(name) {
+		this.editMode = MapEditorMode.EDIT_PROPS;
+
+		// @TODO: Proper dimensions calculations!
+		prop = new MapProp(name, 128, 128);
+		prop.setPosition(MapCamera.getCenterPoint());
+		prop.renderable.useSrcAlpha = true;
+		
+		this.addProp(prop);
+		this.setGrabbedEntity(prop);
 	}
 };
 

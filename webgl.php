@@ -30,9 +30,13 @@ var g_fragmentShader = "<?php echo $fs; ?>";
 
 <script type="text/javascript" src="map.js"></script>
 <script type="text/javascript" src="Renderable.js"></script>
+<script type="text/javascript" src="ResourceManager.js"></script>
 <script type="text/javascript" src="tools/PropEditTool.js"></script>
 <script type="text/javascript" src="Interface.js"></script>
 <script type="text/javascript" src="main.js"></script>
+
+<link rel="stylesheet" type="text/css" href="style.css">
+
 
 </head>
 <body onload="start()">
@@ -48,6 +52,10 @@ var g_fragmentShader = "<?php echo $fs; ?>";
 	<input name="SetMapEditorMode" type="radio" value="2">Edit Lights</input>
 
 </form>
+
+<img class="prop" src="test.png"/>
+<img class="prop" src="lemminhoos256.png"/>
+
 </div>
 
 

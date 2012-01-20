@@ -321,9 +321,14 @@ function RenderableImage(url, width, height) {
 	this.HSVShift = vec3.create();
 	this.position = vec3.create();
 
+	ResourceManager.printStats();
+	
 	// create texture from image
-	this.texture = loadTexture(url);
+	this.texture = ResourceManager.getTexture(url);
 
+	ResourceManager.printStats();
+	
+	
 	this.buildVertexBuffer();
 	this.buildTextureBuffer();
 	

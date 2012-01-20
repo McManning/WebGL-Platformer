@@ -84,46 +84,6 @@ function initGL(canvas) {
 
 //////////////////////////////////////////////////////////////////
 
-/**
- * Create a GL texture object and load it from the desired url 
- */
-function loadTexture(url) {
-	var texture = gl.createTexture();
-	texture.image = new Image();
-	texture.image.onload = function() {
-		configureImageTexture(texture); 
-	}
-	texture.image.src = url;
-	return texture;
-}
-
-/**
- * Called in the onload function for a texture image once it's downloaded
- */
-function configureImageTexture(texture) {
-	
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);  
-	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);  
-	
-	// Supporting non power of two textures
-	// See: http://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences#Non-Power_of_Two_Texture_Support
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	
-	// Can't mipmap if want non-power-of-two via wrapping
-	//gl.generateMipmap(gl.TEXTURE_2D); 
-
-	gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-
 var mvMatrixStack = new Array();
 
 function mvPopMatrix() {
@@ -227,6 +187,7 @@ function start() {
 	framerate = new Framerate("framerate");
 	
 	MapEditor.initialize();
+	ResourceManager.initialize();
 	
 	mypic = new RenderableImage("./test.png", 512, 512); //484, 531);
 	mypic.rotation = 0.78539;
