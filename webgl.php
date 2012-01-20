@@ -26,9 +26,12 @@ var g_fragmentShader = "<?php echo $fs; ?>";
 <script type="text/javascript" src="lib/webgl-utils.js"></script>
 <script type="text/javascript" src="lib/glMatrix.js"></script>
 <script type="text/javascript" src="lib/framerate.js"></script>
+<script type="text/javascript" src="lib/jquery-1.7.1.js"></script>
+
 <script type="text/javascript" src="map.js"></script>
 <script type="text/javascript" src="Renderable.js"></script>
 <script type="text/javascript" src="tools/PropEditTool.js"></script>
+<script type="text/javascript" src="Interface.js"></script>
 <script type="text/javascript" src="main.js"></script>
 
 </head>
@@ -38,7 +41,16 @@ var g_fragmentShader = "<?php echo $fs; ?>";
 	SORRY BRO, NO CANVAS SUPPORT
 </canvas>
 
-<div style="position:absolute; top:650px;"><div id="framerate"></div> (Ctrl+Shift+J for JS console)</div>
+<div style="position:absolute; top:650px;"><div id="framerate"></div> (Ctrl+Shift+J for JS console)
+<form>
+	<input name="SetMapEditorMode" type="radio" value="0" checked="checked">Edit Props</input>
+	<input name="SetMapEditorMode" type="radio" value="1">Edit Collisions</input>
+	<input name="SetMapEditorMode" type="radio" value="2">Edit Lights</input>
+
+</form>
+</div>
+
+
 
 </body>
 </html>

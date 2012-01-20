@@ -56,6 +56,12 @@ MapCollision.prototype.intersects = function(pos) {
 	return this.renderable.intersectsBoundingBox(pos);
 }
 
+MapEditorMode = {
+	EDIT_PROPS : 0,
+	EDIT_COLLISIONS : 1,
+	EDIT_LIGHTS : 2
+}
+
 MapEditor = {
 	
 	/**
@@ -76,6 +82,8 @@ MapEditor = {
 		this.grabrect = new RenderableBox(10, 10, 5, [0, 1, 0]);
 		
 		this.renderableDebug = new RenderableDebugger();
+		
+		this.editMode = MapEditorMode.EDIT_PROPS;
 	},
 	
 	addProp : function(ent) {
@@ -93,10 +101,17 @@ MapEditor = {
 	 */
 	pickEntity : function(pos, ignoreCurrent) {
 		
-		var ent = this.pickEntityFromList(this.props, pos, ignoreCurrent);
+		var ent;
 		
-		if (!ent) {
-			ent = this.pickEntityFromList(this.collisions, pos, ignoreCurrent);
+		switch (this.editMode) {
+			case MapEditorMode.EDIT_PROPS:
+				ent = this.pickEntityFromList(this.props, pos, ignoreCurrent);
+				break;
+			case MapEditorMode.EDIT_COLLISIONS:
+				ent = this.pickEntityFromList(this.collisions, pos, ignoreCurrent);
+				break;
+			default:
+				break;
 		}
 		
 		return ent;
@@ -244,8 +259,11 @@ MapEditor = {
 	 */
 	render : function() {
 	
-		this.renderList(this.props);
-		this.renderList(this.collisions);
+		this.renderList(this.props, this.editMode == MapEditorMode.EDIT_PROPS);
+		
+		if (this.editMode == MapEditorMode.EDIT_COLLISIONS) {
+			this.renderList(this.collisions, true);
+		}
 
 		if (this.hovered) {
 			this.hoverrect.render();
@@ -256,12 +274,13 @@ MapEditor = {
 		}
 	},
 	
-	renderList : function(list) {
+	renderList : function(list, showDebug) {
 	
 		var len = list.length;
 		for (var iter = 0; iter < len; iter++) {
 			list[iter].render();
-			this.renderableDebug.render(list[iter].renderable);
+			if (showDebug)
+				this.renderableDebug.render(list[iter].renderable);
 		}
 	},
 
@@ -286,8 +305,12 @@ MapEditor = {
 				}
 			}
 		}
-	}
+	},
 	
+	setEditMode : function(mode) {
+		this.editMode = mode;
+		this.setGrabbedEntity(null);
+	}
 };
 
 
